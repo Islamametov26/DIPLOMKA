@@ -69,6 +69,14 @@ function AdminPanel({ events, onSaved }: Props) {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
+  const generateVenueId = () => {
+    const id =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2, 10)}`
+    setForm((prev) => ({ ...prev, venueId: id }))
+  }
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     setStatus('saving')
@@ -163,12 +171,17 @@ function AdminPanel({ events, onSaved }: Props) {
         </div>
         <label>
           ID площадки
-          <input
-            type="text"
-            value={form.venueId}
-            onChange={(event) => handleChange('venueId', event.target.value)}
-            required
-          />
+          <div className="admin__inline">
+            <input
+              type="text"
+              value={form.venueId}
+              onChange={(event) => handleChange('venueId', event.target.value)}
+              required
+            />
+            <button className="admin__ghost" type="button" onClick={generateVenueId}>
+              Сгенерировать
+            </button>
+          </div>
         </label>
         <label className="admin__checkbox">
           <input

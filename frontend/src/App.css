@@ -399,7 +399,13 @@
   padding: 8px 10px;
   border-radius: 10px;
   border: 1px solid var(--line);
-  background: transparent;
+  background: var(--surface);
+  color: var(--ink);
+  appearance: none;
+}
+
+.admin__select select option {
+  background: var(--surface);
   color: var(--ink);
 }
 
@@ -424,6 +430,23 @@
   font-family: inherit;
   background: transparent;
   color: var(--ink);
+}
+
+.admin__inline {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.admin__ghost {
+  border: 1px dashed var(--line);
+  background: transparent;
+  color: var(--ink);
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .admin__grid {
