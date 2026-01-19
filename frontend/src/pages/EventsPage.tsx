@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react'
 import { listEvents } from '../api/events'
-import AdminPanel from '../components/AdminPanel'
 import EventCard from '../components/EventCard'
 import EventDetailsModal from '../components/EventDetailsModal'
-import { useAuth } from '../context/AuthContext'
 import type { Event } from '../types/event'
 
 const emptyState = {
@@ -19,7 +17,6 @@ type Props = {
 }
 
 function EventsPage({ onRequireAuth }: Props) {
-  const { user } = useAuth()
   const [state, setState] = useState<EventsState>(emptyState)
   const [activeEvent, setActiveEvent] = useState<Event | null>(null)
 
@@ -46,17 +43,6 @@ function EventsPage({ onRequireAuth }: Props) {
     return () => controller.abort()
   }, [])
 
-  const reload = async () => {
-    setState((prev) => ({ ...prev, status: 'loading', error: null }))
-    try {
-      const items = await listEvents()
-      setState({ status: 'success', items, error: null })
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Не удалось загрузить афишу.'
-      setState({ status: 'error', items: [], error: message })
-    }
-  }
 
   return (
     <section className="events">
@@ -93,9 +79,6 @@ function EventsPage({ onRequireAuth }: Props) {
         </div>
       </div>
 
-      {user && state.status === 'success' && (
-        <AdminPanel events={state.items} onSaved={reload} />
-      )}
       {activeEvent && (
         <EventDetailsModal
           event={activeEvent}

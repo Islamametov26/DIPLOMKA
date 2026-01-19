@@ -3,6 +3,7 @@ import './App.css'
 import AuthModal from './components/AuthModal'
 import ProfileModal from './components/ProfileModal'
 import { useAuth } from './context/AuthContext'
+import AdminPage from './pages/AdminPage'
 import EventsPage from './pages/EventsPage'
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
 
   const [authOpen, setAuthOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const isAdmin = window.location.pathname.startsWith('/admin')
 
   return (
     <div className="app">
@@ -56,7 +58,11 @@ function App() {
         </div>
       </header>
       <main className="app__main">
-        <EventsPage onRequireAuth={() => setAuthOpen(true)} />
+        {isAdmin ? (
+          <AdminPage onRequireAuth={() => setAuthOpen(true)} />
+        ) : (
+          <EventsPage onRequireAuth={() => setAuthOpen(true)} />
+        )}
       </main>
       {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
       {profileOpen && user && <ProfileModal onClose={() => setProfileOpen(false)} />}
