@@ -26,7 +26,7 @@
 
 .app__nav {
   display: flex;
-  gap: 24px;
+  gap: 16px;
   font-size: 0.95rem;
 }
 
@@ -50,23 +50,21 @@
   color: var(--ink);
   text-decoration: none;
   position: relative;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  padding: 6px 10px;
+  border-radius: 999px;
 }
 
-.app__link::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  bottom: -6px;
-  width: 100%;
-  height: 2px;
-  background: var(--accent);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.2s ease;
+.app__link:hover {
+  background: rgba(240, 91, 43, 0.12);
 }
 
-.app__link:hover::after {
-  transform: scaleX(1);
+.app__link--active {
+  background: rgba(240, 91, 43, 0.2);
+  color: var(--accent);
 }
 
 .theme-toggle {
@@ -432,11 +430,22 @@
   color: var(--ink);
 }
 
+
 .admin__inline {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 10px;
   align-items: center;
+}
+
+.admin__inline select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
 }
 
 .admin__ghost {
@@ -472,6 +481,17 @@
   justify-self: start;
 }
 
+.admin__danger {
+  border: 1px solid rgba(220, 50, 50, 0.5);
+  background: transparent;
+  color: #e55c5c;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+  justify-self: start;
+}
+
 .admin__status {
   padding: 12px 16px;
   border-radius: 16px;
@@ -487,6 +507,46 @@
 .admin__note {
   margin: 0;
   color: var(--muted);
+}
+
+.admin__stack {
+  display: grid;
+  gap: 24px;
+}
+
+.venues__grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.venue-card {
+  padding: 20px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  display: grid;
+  gap: 10px;
+}
+
+.venue-card__name {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.venue-card__address {
+  color: var(--muted);
+}
+
+.venue-card__button {
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+  justify-self: start;
 }
 
 .modal {

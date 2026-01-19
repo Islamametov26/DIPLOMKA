@@ -162,3 +162,31 @@ func (r *BookingRepository) loadSeats(ctx context.Context, bookings []domain.Boo
 
 	return result, nil
 }
+
+func (r *BookingRepository) ListSeatsByEvent(ctx context.Context, eventID uuid.UUID) ([]string, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT bs.seat_label
+		FROM booking_seats bs
+		JOIN bookings b ON b.id = bs.booking_id
+		WHERE b.event_id = $1 AND b.status = 'active'
+		ORDER BY bs.seat_label ASC
+	`, eventID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var seats []string
+	for rows.Next() {
+		var seat string
+		if err := rows.Scan(&seat); err != nil {
+			return nil, err
+		}
+		seats = append(seats, seat)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return seats, nil
+}

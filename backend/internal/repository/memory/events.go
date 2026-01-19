@@ -66,3 +66,13 @@ func (r *EventRepository) Update(_ context.Context, event domain.Event) (domain.
 	}
 	return domain.Event{}, repository.ErrNotFound
 }
+
+func (r *EventRepository) Delete(_ context.Context, id uuid.UUID) error {
+	for i, existing := range r.events {
+		if existing.ID == id {
+			r.events = append(r.events[:i], r.events[i+1:]...)
+			return nil
+		}
+	}
+	return repository.ErrNotFound
+}

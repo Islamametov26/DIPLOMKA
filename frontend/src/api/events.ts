@@ -38,3 +38,18 @@ export async function updateEvent(id: string, payload: EventPayload) {
     body: JSON.stringify(payload),
   })
 }
+
+export async function deleteEvent(id: string) {
+  return request<void>(`/api/events/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+type SeatsResponse = {
+  items: string[]
+}
+
+export async function listOccupiedSeats(eventId: string) {
+  const data = await request<SeatsResponse>(`/api/events/${eventId}/occupied-seats`)
+  return data.items
+}

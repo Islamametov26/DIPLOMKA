@@ -34,8 +34,12 @@ func NewRouter(
 	{
 		api.GET("/events", eventHandler.List)
 		api.GET("/events/:id", eventHandler.Get)
+		api.GET("/events/:id/occupied-seats", bookingHandler.Seats)
 		api.GET("/venues", venueHandler.List)
 		api.GET("/venues/:id", venueHandler.Get)
+		api.POST("/venues", authMiddleware(authService), venueHandler.Create)
+		api.PUT("/venues/:id", authMiddleware(authService), venueHandler.Update)
+		api.DELETE("/venues/:id", authMiddleware(authService), venueHandler.Delete)
 		api.GET("/categories", categoryHandler.List)
 		api.GET("/categories/:id", categoryHandler.Get)
 
@@ -46,6 +50,7 @@ func NewRouter(
 
 		api.POST("/events", authMiddleware(authService), eventHandler.Create)
 		api.PUT("/events/:id", authMiddleware(authService), eventHandler.Update)
+		api.DELETE("/events/:id", authMiddleware(authService), eventHandler.Delete)
 
 		bookings := api.Group("/bookings", authMiddleware(authService))
 		{

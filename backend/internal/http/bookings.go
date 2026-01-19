@@ -86,6 +86,22 @@ func (h *BookingHandler) Cancel(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+func (h *BookingHandler) Seats(c *gin.Context) {
+	eventID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		writeError(c, http.StatusBadRequest, "invalid id")
+		return
+	}
+
+	seats, err := h.service.ListSeatsByEvent(c.Request.Context(), eventID)
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"items": seats})
+}
+
 func getUserID(c *gin.Context) (uuid.UUID, bool) {
 	value := c.GetString("user_id")
 	if value == "" {

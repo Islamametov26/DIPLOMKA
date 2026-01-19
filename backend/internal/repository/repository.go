@@ -12,11 +12,15 @@ type EventRepository interface {
 	Get(ctx context.Context, id uuid.UUID) (domain.Event, error)
 	Create(ctx context.Context, event domain.Event) (domain.Event, error)
 	Update(ctx context.Context, event domain.Event) (domain.Event, error)
+	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 type VenueRepository interface {
 	List(ctx context.Context) ([]domain.Venue, error)
 	Get(ctx context.Context, id uuid.UUID) (domain.Venue, error)
+	Create(ctx context.Context, venue domain.Venue) (domain.Venue, error)
+	Update(ctx context.Context, venue domain.Venue) (domain.Venue, error)
+	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 type CategoryRepository interface {
@@ -34,4 +38,5 @@ type BookingRepository interface {
 	ListByUser(ctx context.Context, userID uuid.UUID) ([]domain.Booking, error)
 	Create(ctx context.Context, booking domain.Booking) (domain.Booking, error)
 	Cancel(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
+	ListSeatsByEvent(ctx context.Context, eventID uuid.UUID) ([]string, error)
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createBooking } from '../api/bookings'
+import { listOccupiedSeats } from '../api/events'
 import { useAuth } from '../context/AuthContext'
 import type { Event } from '../types/event'
 import SeatPicker from './SeatPicker'
@@ -14,6 +15,7 @@ function EventDetailsModal({ event, onClose, onRequireAuth }: Props) {
   const { user } = useAuth()
   const seatPrice = 2500
   const [selectedSeats, setSelectedSeats] = useState<string[]>([])
+  const [reservedSeats, setReservedSeats] = useState<string[]>([])
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [error, setError] = useState<string | null>(null)
 
@@ -26,6 +28,26 @@ function EventDetailsModal({ event, onClose, onRequireAuth }: Props) {
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
   }, [onClose])
+
+  useEffect(() => {
+    let active = true
+    const loadSeats = async () => {
+      try {
+        const seats = await listOccupiedSeats(event.id)
+        if (active) {
+          setReservedSeats(seats)
+        }
+      } catch {
+        if (active) {
+          setReservedSeats([])
+        }
+      }
+    }
+    loadSeats()
+    return () => {
+      active = false
+    }
+  }, [event.id])
 
   const handleBooking = async () => {
     if (!user) {
@@ -71,7 +93,11 @@ function EventDetailsModal({ event, onClose, onRequireAuth }: Props) {
           <span>Площадка: {event.venueId}</span>
         </div>
 
-        <SeatPicker selected={selectedSeats} onChange={setSelectedSeats} />
+        <SeatPicker
+          selected={selectedSeats}
+          reserved={reservedSeats}
+          onChange={setSelectedSeats}
+        />
 
         <div className="modal__booking">
           <div>

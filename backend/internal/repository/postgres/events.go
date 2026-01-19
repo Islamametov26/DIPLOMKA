@@ -99,6 +99,9 @@ func (r *EventRepository) Create(ctx context.Context, event domain.Event) (domai
 		&event.CreatedAt,
 		&event.UpdatedAt,
 	); err != nil {
+		if isForeignKeyViolation(err) {
+			return domain.Event{}, repository.ErrInvalid
+		}
 		return domain.Event{}, err
 	}
 
@@ -130,6 +133,9 @@ func (r *EventRepository) Update(ctx context.Context, event domain.Event) (domai
 		&event.CreatedAt,
 		&event.UpdatedAt,
 	); err != nil {
+		if isForeignKeyViolation(err) {
+			return domain.Event{}, repository.ErrInvalid
+		}
 		if errors.Is(err, sql.ErrNoRows) {
 			return domain.Event{}, repository.ErrNotFound
 		}
@@ -137,4 +143,19 @@ func (r *EventRepository) Update(ctx context.Context, event domain.Event) (domai
 	}
 
 	return event, nil
+}
+
+func (r *EventRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	result, err := r.db.ExecContext(ctx, `DELETE FROM events WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return repository.ErrNotFound
+	}
+	return nil
 }

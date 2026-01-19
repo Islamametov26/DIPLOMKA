@@ -52,3 +52,7 @@ func (s *BookingService) Create(ctx context.Context, userID uuid.UUID, eventID u
 func (s *BookingService) Cancel(ctx context.Context, id uuid.UUID, userID uuid.UUID) error {
 	return s.repo.Cancel(ctx, id, userID)
 }
+
+func (s *BookingService) ListSeatsByEvent(ctx context.Context, eventID uuid.UUID) ([]string, error) {
+	return s.repo.ListSeatsByEvent(ctx, eventID)
+}

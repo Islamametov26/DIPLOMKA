@@ -123,6 +123,21 @@ func (h *EventHandler) Update(c *gin.Context) {
 	c.JSON(http.StatusOK, updated)
 }
 
+func (h *EventHandler) Delete(c *gin.Context) {
+	id, ok := parseUUID(c.Param("id"))
+	if !ok {
+		writeError(c, http.StatusBadRequest, "invalid id")
+		return
+	}
+
+	if err := h.service.Delete(c.Request.Context(), id); err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
 func (h *VenueHandler) List(c *gin.Context) {
 	venues, err := h.service.List(c.Request.Context())
 	if err != nil {
@@ -147,6 +162,73 @@ func (h *VenueHandler) Get(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, venue)
+}
+
+type venuePayload struct {
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Address string `json:"address"`
+}
+
+func (h *VenueHandler) Create(c *gin.Context) {
+	var payload venuePayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		writeError(c, http.StatusBadRequest, "invalid payload")
+		return
+	}
+	venue, ok := parseVenuePayload(payload)
+	if !ok {
+		writeError(c, http.StatusBadRequest, "invalid payload")
+		return
+	}
+
+	created, err := h.service.Create(c.Request.Context(), venue)
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, created)
+}
+
+func (h *VenueHandler) Update(c *gin.Context) {
+	id, ok := parseUUID(c.Param("id"))
+	if !ok {
+		writeError(c, http.StatusBadRequest, "invalid id")
+		return
+	}
+	var payload venuePayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		writeError(c, http.StatusBadRequest, "invalid payload")
+		return
+	}
+	venue, ok := parseVenuePayload(payload)
+	if !ok {
+		writeError(c, http.StatusBadRequest, "invalid payload")
+		return
+	}
+	venue.ID = id
+
+	updated, err := h.service.Update(c.Request.Context(), venue)
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, updated)
+}
+
+func (h *VenueHandler) Delete(c *gin.Context) {
+	id, ok := parseUUID(c.Param("id"))
+	if !ok {
+		writeError(c, http.StatusBadRequest, "invalid id")
+		return
+	}
+	if err := h.service.Delete(c.Request.Context(), id); err != nil {
+		writeServiceError(c, err)
+		return
+	}
+	c.Status(http.StatusNoContent)
 }
 
 func (h *CategoryHandler) List(c *gin.Context) {
@@ -207,6 +289,24 @@ func parseEventPayload(payload eventPayload) (domain.Event, bool) {
 	}, true
 }
 
+func parseVenuePayload(payload venuePayload) (domain.Venue, bool) {
+	if payload.Name == "" || payload.Address == "" {
+		return domain.Venue{}, false
+	}
+	venue := domain.Venue{
+		Name:    payload.Name,
+		Address: payload.Address,
+	}
+	if payload.ID != "" {
+		id, err := uuid.Parse(payload.ID)
+		if err != nil {
+			return domain.Venue{}, false
+		}
+		venue.ID = id
+	}
+	return venue, true
+}
+
 func writeError(c *gin.Context, status int, message string) {
 	c.JSON(status, gin.H{"error": message})
 }
@@ -219,6 +319,8 @@ func writeServiceError(c *gin.Context, err error) {
 		writeError(c, http.StatusConflict, "conflict")
 	case errors.Is(err, repository.ErrUnauthorized):
 		writeError(c, http.StatusUnauthorized, "unauthorized")
+	case errors.Is(err, repository.ErrInvalid):
+		writeError(c, http.StatusBadRequest, "invalid")
 	default:
 		writeError(c, http.StatusInternalServerError, "internal error")
 	}

@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
-import { createEvent, updateEvent } from '../api/events'
+import { createEvent, deleteEvent, updateEvent } from '../api/events'
 import type { Event } from '../types/event'
+import type { Venue } from '../types/venue'
 
 type Props = {
   events: Event[]
+  venues: Venue[]
   onSaved: () => void
 }
 
@@ -15,6 +17,7 @@ const emptyForm = {
   venueId: '',
   published: false,
 }
+
 
 type FormState = typeof emptyForm
 
@@ -34,7 +37,7 @@ function toDateTimeLocal(value: string) {
   )}:${pad(date.getMinutes())}`
 }
 
-function AdminPanel({ events, onSaved }: Props) {
+function AdminPanel({ events, venues, onSaved }: Props) {
   const [selectedId, setSelectedId] = useState('')
   const [form, setForm] = useState<FormState>(emptyForm)
   const [status, setStatus] = useState<Status>('idle')
@@ -69,13 +72,6 @@ function AdminPanel({ events, onSaved }: Props) {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
-  const generateVenueId = () => {
-    const id =
-      typeof crypto !== 'undefined' && 'randomUUID' in crypto
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(16).slice(2, 10)}`
-    setForm((prev) => ({ ...prev, venueId: id }))
-  }
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -101,6 +97,29 @@ function AdminPanel({ events, onSaved }: Props) {
       onSaved()
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Не удалось сохранить событие.'
+      setError(message)
+      setStatus('error')
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!selectedEvent) {
+      return
+    }
+    const confirmed = window.confirm('Удалить событие?')
+    if (!confirmed) {
+      return
+    }
+    setStatus('saving')
+    setError(null)
+    try {
+      await deleteEvent(selectedEvent.id)
+      setSelectedId('')
+      setForm(emptyForm)
+      setStatus('success')
+      onSaved()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Не удалось удалить событие.'
       setError(message)
       setStatus('error')
     }
@@ -170,17 +189,20 @@ function AdminPanel({ events, onSaved }: Props) {
           </label>
         </div>
         <label>
-          ID площадки
+          Площадка
           <div className="admin__inline">
-            <input
-              type="text"
+            <select
               value={form.venueId}
               onChange={(event) => handleChange('venueId', event.target.value)}
               required
-            />
-            <button className="admin__ghost" type="button" onClick={generateVenueId}>
-              Сгенерировать
-            </button>
+            >
+              <option value="">Выберите площадку</option>
+              {venues.map((venue) => (
+                <option key={venue.id} value={venue.id}>
+                  {venue.name}
+                </option>
+              ))}
+            </select>
           </div>
         </label>
         <label className="admin__checkbox">
@@ -196,6 +218,11 @@ function AdminPanel({ events, onSaved }: Props) {
         <button className="admin__primary" type="submit" disabled={status === 'saving'}>
           {status === 'saving' ? 'Сохранение...' : 'Сохранить'}
         </button>
+        {selectedEvent && (
+          <button className="admin__danger" type="button" onClick={handleDelete}>
+            Удалить событие
+          </button>
+        )}
       </form>
     </section>
   )

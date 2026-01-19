@@ -72,3 +72,76 @@ func (r *VenueRepository) Get(ctx context.Context, id uuid.UUID) (domain.Venue, 
 
 	return venue, nil
 }
+
+func (r *VenueRepository) Create(ctx context.Context, venue domain.Venue) (domain.Venue, error) {
+	var row *sql.Row
+	if venue.ID == uuid.Nil {
+		row = r.db.QueryRowContext(ctx, `
+			INSERT INTO venues (name, address)
+			VALUES ($1, $2)
+			RETURNING id, name, address, created_at, updated_at
+		`, venue.Name, venue.Address)
+	} else {
+		row = r.db.QueryRowContext(ctx, `
+			INSERT INTO venues (id, name, address)
+			VALUES ($1, $2, $3)
+			RETURNING id, name, address, created_at, updated_at
+		`, venue.ID, venue.Name, venue.Address)
+	}
+
+	if err := row.Scan(
+		&venue.ID,
+		&venue.Name,
+		&venue.Address,
+		&venue.CreatedAt,
+		&venue.UpdatedAt,
+	); err != nil {
+		if isUniqueViolation(err) {
+			return domain.Venue{}, repository.ErrConflict
+		}
+		return domain.Venue{}, err
+	}
+
+	return venue, nil
+}
+
+func (r *VenueRepository) Update(ctx context.Context, venue domain.Venue) (domain.Venue, error) {
+	row := r.db.QueryRowContext(ctx, `
+		UPDATE venues
+		SET name = $1,
+		    address = $2,
+		    updated_at = now()
+		WHERE id = $3
+		RETURNING id, name, address, created_at, updated_at
+	`, venue.Name, venue.Address, venue.ID)
+
+	if err := row.Scan(
+		&venue.ID,
+		&venue.Name,
+		&venue.Address,
+		&venue.CreatedAt,
+		&venue.UpdatedAt,
+	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.Venue{}, repository.ErrNotFound
+		}
+		return domain.Venue{}, err
+	}
+
+	return venue, nil
+}
+
+func (r *VenueRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	result, err := r.db.ExecContext(ctx, `DELETE FROM venues WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return repository.ErrNotFound
+	}
+	return nil
+}

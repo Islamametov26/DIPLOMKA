@@ -3,22 +3,15 @@ import { useMemo } from 'react'
 type Props = {
   selected: string[]
   onChange: (seats: string[]) => void
+  reserved?: string[]
 }
 
 const rows = ['A', 'B', 'C', 'D', 'E', 'F']
 const seatsPerRow = 10
 
-const reservedSeats = new Set([
-  'A-1',
-  'A-2',
-  'B-5',
-  'C-7',
-  'D-4',
-  'E-9',
-])
-
-function SeatPicker({ selected, onChange }: Props) {
+function SeatPicker({ selected, onChange, reserved = [] }: Props) {
   const selectedSet = useMemo(() => new Set(selected), [selected])
+  const reservedSeats = useMemo(() => new Set(reserved), [reserved])
 
   const seatMap = useMemo(() => {
     return rows.map((row) =>
@@ -96,7 +89,9 @@ function SeatPicker({ selected, onChange }: Props) {
       <div className="seats__legend">
         <span className="seat seat--legend">Свободно</span>
         <span className="seat seat--legend seat--selected">Выбрано</span>
-        <span className="seat seat--legend seat--reserved">Занято</span>
+        {reservedSeats.size > 0 && (
+          <span className="seat seat--legend seat--reserved">Занято</span>
+        )}
       </div>
     </section>
   )

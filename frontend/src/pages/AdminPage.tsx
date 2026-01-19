@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { listEvents } from '../api/events'
+import { listVenues } from '../api/venues'
 import AdminPanel from '../components/AdminPanel'
+import VenueManager from '../components/VenueManager'
 import { useAuth } from '../context/AuthContext'
 import type { Event } from '../types/event'
+import type { Venue } from '../types/venue'
 
 type LoadState = {
   status: 'idle' | 'loading' | 'ready' | 'error'
@@ -11,6 +14,7 @@ type LoadState = {
 }
 
 const emptyState: LoadState = { status: 'idle', items: [], error: null }
+const emptyVenues: Venue[] = []
 
 type Props = {
   onRequireAuth: () => void
@@ -19,16 +23,27 @@ type Props = {
 function AdminPage({ onRequireAuth }: Props) {
   const { user } = useAuth()
   const [state, setState] = useState<LoadState>(emptyState)
+  const [venues, setVenues] = useState<Venue[]>(emptyVenues)
 
   const load = async () => {
     setState((prev) => ({ ...prev, status: 'loading', error: null }))
     try {
-      const items = await listEvents()
+      const [items, venueItems] = await Promise.all([listEvents(), listVenues()])
       setState({ status: 'ready', items, error: null })
+      setVenues(venueItems)
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Не удалось загрузить афишу.'
       setState({ status: 'error', items: [], error: message })
+    }
+  }
+
+  const reloadVenues = async () => {
+    try {
+      const venueItems = await listVenues()
+      setVenues(venueItems)
+    } catch {
+      // ignore
     }
   }
 
@@ -64,7 +79,10 @@ function AdminPage({ onRequireAuth }: Props) {
       )}
       {state.status === 'loading' && <div className="admin__status">Загрузка...</div>}
       {state.status === 'ready' && (
-        <AdminPanel events={state.items} onSaved={load} />
+        <div className="admin__stack">
+          <AdminPanel events={state.items} venues={venues} onSaved={load} />
+          <VenueManager venues={venues} onSaved={reloadVenues} />
+        </div>
       )}
     </section>
   )
