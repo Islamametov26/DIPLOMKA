@@ -15,7 +15,7 @@ type Event struct {
     VenueID     uuid.UUID `json:"venueId"`
     Published   bool      `json:"published"`
 
-    CreatedBy   uuid.UUID `json:"createdBy"` // ← ДОБАВЬ ВОТ ЭТО
+    CreatedBy   uuid.UUID `json:"createdBy"` 
 
     CreatedAt   time.Time `json:"createdAt"`
     UpdatedAt   time.Time `json:"updatedAt"`
