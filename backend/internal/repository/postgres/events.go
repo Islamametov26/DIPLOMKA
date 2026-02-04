@@ -20,7 +20,7 @@ func NewEventRepository(db *sql.DB) *EventRepository {
 
 func (r *EventRepository) List(ctx context.Context) ([]domain.Event, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT id, title, description, start_at, end_at, venue_id, published, created_at, updated_at
+		SELECT id, title, description, start_at, end_at, venue_id, published, created_by, created_at, updated_at
 		FROM events
 		ORDER BY start_at ASC
 	`)
@@ -40,6 +40,7 @@ func (r *EventRepository) List(ctx context.Context) ([]domain.Event, error) {
 			&event.EndAt,
 			&event.VenueID,
 			&event.Published,
+			&event.CreatedBy,
 			&event.CreatedAt,
 			&event.UpdatedAt,
 		); err != nil {
@@ -57,7 +58,7 @@ func (r *EventRepository) List(ctx context.Context) ([]domain.Event, error) {
 func (r *EventRepository) Get(ctx context.Context, id uuid.UUID) (domain.Event, error) {
 	var event domain.Event
 	row := r.db.QueryRowContext(ctx, `
-		SELECT id, title, description, start_at, end_at, venue_id, published, created_at, updated_at
+		SELECT id, title, description, start_at, end_at, venue_id, published, created_by, created_at, updated_at
 		FROM events
 		WHERE id = $1
 	`, id)
@@ -69,6 +70,7 @@ func (r *EventRepository) Get(ctx context.Context, id uuid.UUID) (domain.Event, 
 		&event.EndAt,
 		&event.VenueID,
 		&event.Published,
+		&event.CreatedBy,
 		&event.CreatedAt,
 		&event.UpdatedAt,
 	); err != nil {
@@ -83,10 +85,10 @@ func (r *EventRepository) Get(ctx context.Context, id uuid.UUID) (domain.Event, 
 
 func (r *EventRepository) Create(ctx context.Context, event domain.Event) (domain.Event, error) {
 	row := r.db.QueryRowContext(ctx, `
-		INSERT INTO events (title, description, start_at, end_at, venue_id, published)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING id, title, description, start_at, end_at, venue_id, published, created_at, updated_at
-	`, event.Title, event.Description, event.StartAt, event.EndAt, event.VenueID, event.Published)
+		INSERT INTO events (title, description, start_at, end_at, venue_id, published, created_by)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING id, title, description, start_at, end_at, venue_id, published, created_by, created_at, updated_at
+	`, event.Title, event.Description, event.StartAt, event.EndAt, event.VenueID, event.Published, event.CreatedBy)
 
 	if err := row.Scan(
 		&event.ID,
@@ -96,6 +98,7 @@ func (r *EventRepository) Create(ctx context.Context, event domain.Event) (domai
 		&event.EndAt,
 		&event.VenueID,
 		&event.Published,
+		&event.CreatedBy,
 		&event.CreatedAt,
 		&event.UpdatedAt,
 	); err != nil {
@@ -119,7 +122,7 @@ func (r *EventRepository) Update(ctx context.Context, event domain.Event) (domai
 		    published = $6,
 		    updated_at = now()
 		WHERE id = $7
-		RETURNING id, title, description, start_at, end_at, venue_id, published, created_at, updated_at
+		RETURNING id, title, description, start_at, end_at, venue_id, published, created_by, created_at, updated_at
 	`, event.Title, event.Description, event.StartAt, event.EndAt, event.VenueID, event.Published, event.ID)
 
 	if err := row.Scan(
@@ -130,6 +133,7 @@ func (r *EventRepository) Update(ctx context.Context, event domain.Event) (domai
 		&event.EndAt,
 		&event.VenueID,
 		&event.Published,
+		&event.CreatedBy,
 		&event.CreatedAt,
 		&event.UpdatedAt,
 	); err != nil {
@@ -159,3 +163,4 @@ func (r *EventRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 	return nil
 }
+
