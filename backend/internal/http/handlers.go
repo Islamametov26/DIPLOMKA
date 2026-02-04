@@ -80,6 +80,14 @@ func (h *EventHandler) Create(c *gin.Context) {
 	}
 
 	event, ok := parseEventPayload(payload)
+	userIDStr := c.GetString("user_id")
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		writeError(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	event.CreatedBy = userID
+
 	if !ok {
 		writeError(c, http.StatusBadRequest, "invalid payload")
 		return
@@ -101,6 +109,24 @@ func (h *EventHandler) Update(c *gin.Context) {
 		return
 	}
 
+	userIDStr := c.GetString("user_id")
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		writeError(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	existing, err := h.service.Get(c.Request.Context(), id)
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	if existing.CreatedBy != userID {
+		writeError(c, http.StatusForbidden, "forbidden")
+		return
+	}
+
 	var payload eventPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		writeError(c, http.StatusBadRequest, "invalid payload")
@@ -113,6 +139,7 @@ func (h *EventHandler) Update(c *gin.Context) {
 		return
 	}
 	event.ID = id
+	event.CreatedBy = existing.CreatedBy // нельзя подменить владельца
 
 	updated, err := h.service.Update(c.Request.Context(), event)
 	if err != nil {
@@ -130,22 +157,30 @@ func (h *EventHandler) Delete(c *gin.Context) {
 		return
 	}
 
+	userIDStr := c.GetString("user_id")
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		writeError(c, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	existing, err := h.service.Get(c.Request.Context(), id)
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	if existing.CreatedBy != userID {
+		writeError(c, http.StatusForbidden, "forbidden")
+		return
+	}
+
 	if err := h.service.Delete(c.Request.Context(), id); err != nil {
 		writeServiceError(c, err)
 		return
 	}
 
 	c.Status(http.StatusNoContent)
-}
-
-func (h *VenueHandler) List(c *gin.Context) {
-	venues, err := h.service.List(c.Request.Context())
-	if err != nil {
-		writeServiceError(c, err)
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"items": venues})
 }
 
 func (h *VenueHandler) Get(c *gin.Context) {
