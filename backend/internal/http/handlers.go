@@ -80,6 +80,11 @@ func (h *EventHandler) Create(c *gin.Context) {
 	}
 
 	event, ok := parseEventPayload(payload)
+	if !ok {
+		writeError(c, http.StatusBadRequest, "invalid payload")
+		return
+	}
+
 	userIDStr := c.GetString("user_id")
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
@@ -87,11 +92,6 @@ func (h *EventHandler) Create(c *gin.Context) {
 		return
 	}
 	event.CreatedBy = userID
-
-	if !ok {
-		writeError(c, http.StatusBadRequest, "invalid payload")
-		return
-	}
 
 	created, err := h.service.Create(c.Request.Context(), event)
 	if err != nil {
@@ -139,7 +139,7 @@ func (h *EventHandler) Update(c *gin.Context) {
 		return
 	}
 	event.ID = id
-	event.CreatedBy = existing.CreatedBy // нельзя подменить владельца
+	event.CreatedBy = existing.CreatedBy // владелец не меняется
 
 	updated, err := h.service.Update(c.Request.Context(), event)
 	if err != nil {
