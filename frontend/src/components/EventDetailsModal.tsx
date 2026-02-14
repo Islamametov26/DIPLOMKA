@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { createBooking } from '../api/bookings'
 import { listOccupiedSeats } from '../api/events'
 import { useAuth } from '../context/AuthContext'
@@ -9,15 +9,17 @@ type Props = {
   event: Event
   onClose: () => void
   onRequireAuth: () => void
+  onDelete: (eventId: string) => Promise<void>
 }
 
-function EventDetailsModal({ event, onClose, onRequireAuth }: Props) {
+function EventDetailsModal({ event, onClose, onRequireAuth, onDelete }: Props) {
   const { user } = useAuth()
   const seatPrice = 2500
   const [selectedSeats, setSelectedSeats] = useState<string[]>([])
   const [reservedSeats, setReservedSeats] = useState<string[]>([])
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [error, setError] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     const handleKey = (keyboardEvent: KeyboardEvent) => {
@@ -71,6 +73,28 @@ function EventDetailsModal({ event, onClose, onRequireAuth }: Props) {
     }
   }
 
+  const handleDelete = async () => {
+    if (!user) {
+      onRequireAuth()
+      return
+    }
+    const confirmed = window.confirm('Удалить событие?')
+    if (!confirmed) {
+      return
+    }
+    setIsDeleting(true)
+    setError(null)
+    try {
+      await onDelete(event.id)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Не удалось удалить событие.'
+      setError(message)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const isPastEvent = new Date(event.endAt).getTime() < Date.now()
   const total = selectedSeats.length * seatPrice
 
   return (
@@ -93,11 +117,7 @@ function EventDetailsModal({ event, onClose, onRequireAuth }: Props) {
           <span>Площадка: {event.venueId}</span>
         </div>
 
-        <SeatPicker
-          selected={selectedSeats}
-          reserved={reservedSeats}
-          onChange={setSelectedSeats}
-        />
+        <SeatPicker selected={selectedSeats} reserved={reservedSeats} onChange={setSelectedSeats} />
 
         <div className="modal__booking">
           <div>
@@ -107,10 +127,18 @@ function EventDetailsModal({ event, onClose, onRequireAuth }: Props) {
           <button className="modal__primary" type="button" onClick={handleBooking}>
             Забронировать
           </button>
+          {isPastEvent && (
+            <button
+              className="modal__danger"
+              type="button"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Удаление...' : 'Удалить событие'}
+            </button>
+          )}
         </div>
-        {status === 'success' && (
-          <div className="modal__status">Бронь оформлена! Проверьте профиль.</div>
-        )}
+        {status === 'success' && <div className="modal__status">Бронь оформлена! Проверьте профиль.</div>}
         {error && <div className="modal__status modal__status--error">{error}</div>}
       </div>
     </div>

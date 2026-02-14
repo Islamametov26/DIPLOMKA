@@ -171,7 +171,8 @@ func (h *EventHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	if existing.CreatedBy != userID {
+	isPastEvent := existing.EndAt.Before(time.Now().UTC())
+	if !isPastEvent && existing.CreatedBy != uuid.Nil && existing.CreatedBy != userID {
 		writeError(c, http.StatusForbidden, "forbidden")
 		return
 	}
