@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { createVenue, deleteVenue, updateVenue } from '../api/venues'
 import type { Venue } from '../types/venue'
 
@@ -8,7 +8,6 @@ type Props = {
 }
 
 const emptyVenue = {
-  id: '',
   name: '',
   address: '',
 }
@@ -36,7 +35,7 @@ function VenueManager({ venues, onSaved }: Props) {
     if (!venue) {
       return
     }
-    setForm({ id: venue.id, name: venue.name, address: venue.address })
+    setForm({ name: venue.name, address: venue.address })
   }
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -45,7 +44,6 @@ function VenueManager({ venues, onSaved }: Props) {
     setError(null)
 
     const payload = {
-      id: form.id || undefined,
       name: form.name.trim(),
       address: form.address.trim(),
     }
@@ -97,11 +95,7 @@ function VenueManager({ venues, onSaved }: Props) {
         </div>
         <div className="admin__select">
           <label htmlFor="venueSelect">Редактировать</label>
-          <select
-            id="venueSelect"
-            value={selectedId}
-            onChange={(event) => handleSelect(event.target.value)}
-          >
+          <select id="venueSelect" value={selectedId} onChange={(event) => handleSelect(event.target.value)}>
             <option value="">Новая площадка</option>
             {venues.map((venue) => (
               <option key={venue.id} value={venue.id}>
@@ -113,14 +107,6 @@ function VenueManager({ venues, onSaved }: Props) {
       </div>
 
       <form className="admin__form" onSubmit={handleSubmit}>
-        <label>
-          ID (опционально)
-          <input
-            type="text"
-            value={form.id}
-            onChange={(event) => setForm((prev) => ({ ...prev, id: event.target.value }))}
-          />
-        </label>
         <label>
           Название
           <input

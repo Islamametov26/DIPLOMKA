@@ -348,15 +348,17 @@ func parseEventPayload(payload eventPayload) (domain.Event, bool) {
 }
 
 func parseVenuePayload(payload venuePayload) (domain.Venue, bool) {
-	if payload.Name == "" || payload.Address == "" {
+	name := strings.TrimSpace(payload.Name)
+	address := strings.TrimSpace(payload.Address)
+	if name == "" || address == "" {
 		return domain.Venue{}, false
 	}
 	venue := domain.Venue{
-		Name:    payload.Name,
-		Address: payload.Address,
+		Name:    name,
+		Address: address,
 	}
-	if payload.ID != "" {
-		id, err := uuid.Parse(payload.ID)
+	if strings.TrimSpace(payload.ID) != "" {
+		id, err := uuid.Parse(strings.TrimSpace(payload.ID))
 		if err != nil {
 			return domain.Venue{}, false
 		}
