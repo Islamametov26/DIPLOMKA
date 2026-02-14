@@ -13,7 +13,7 @@ type LoadState = {
   error: string | null
 }
 
-const emptyState: LoadState = { status: 'idle', items: [], error: null }
+const emptyState: LoadState = { status: 'loading', items: [], error: null }
 const emptyVenues: Venue[] = []
 
 type Props = {
@@ -24,6 +24,8 @@ function AdminPage({ onRequireAuth }: Props) {
   const { user } = useAuth()
   const [state, setState] = useState<LoadState>(emptyState)
   const [venues, setVenues] = useState<Venue[]>(emptyVenues)
+  const safeEvents = Array.isArray(state.items) ? state.items : []
+  const safeVenues = Array.isArray(venues) ? venues : []
 
   const load = async () => {
     setState((prev) => ({ ...prev, status: 'loading', error: null }))
@@ -77,11 +79,13 @@ function AdminPage({ onRequireAuth }: Props) {
       {state.status === 'error' && (
         <div className="admin__status admin__status--error">{state.error}</div>
       )}
-      {state.status === 'loading' && <div className="admin__status">Загрузка...</div>}
+      {(state.status === 'idle' || state.status === 'loading') && (
+        <div className="admin__status">Загрузка...</div>
+      )}
       {state.status === 'ready' && (
         <div className="admin__stack">
-          <AdminPanel events={state.items} venues={venues} onSaved={load} />
-          <VenueManager venues={venues} onSaved={reloadVenues} />
+          <AdminPanel events={safeEvents} venues={safeVenues} onSaved={load} />
+          <VenueManager venues={safeVenues} onSaved={reloadVenues} />
         </div>
       )}
     </section>
