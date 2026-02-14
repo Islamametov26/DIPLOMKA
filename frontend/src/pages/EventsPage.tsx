@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from 'react'
-import { deleteEvent, listEvents } from '../api/events'
+import { listEvents } from '../api/events'
 import EventCard from '../components/EventCard'
 import EventDetailsModal from '../components/EventDetailsModal'
 import type { Event } from '../types/event'
@@ -43,15 +43,6 @@ function EventsPage({ onRequireAuth }: Props) {
     return () => controller.abort()
   }, [])
 
-  const handleDelete = async (eventId: string) => {
-    await deleteEvent(eventId)
-    setState((prev) => ({
-      ...prev,
-      items: prev.items.filter((item) => item.id !== eventId),
-    }))
-    setActiveEvent(null)
-  }
-
   return (
     <section className="events">
       <div className="events__hero">
@@ -84,7 +75,6 @@ function EventsPage({ onRequireAuth }: Props) {
           event={activeEvent}
           onClose={() => setActiveEvent(null)}
           onRequireAuth={onRequireAuth}
-          onDelete={handleDelete}
         />
       )}
     </section>
