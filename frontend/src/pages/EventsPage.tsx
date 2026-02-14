@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { deleteEvent, listEvents } from '../api/events'
 import EventCard from '../components/EventCard'
 import EventDetailsModal from '../components/EventDetailsModal'
 import type { Event } from '../types/event'
 
 const emptyState = {
-  status: 'idle' as const,
+  status: 'loading' as const,
   items: [] as Event[],
   error: '' as string | null,
 }
@@ -19,6 +19,7 @@ type Props = {
 function EventsPage({ onRequireAuth }: Props) {
   const [state, setState] = useState<EventsState>(emptyState)
   const [activeEvent, setActiveEvent] = useState<Event | null>(null)
+  const safeItems = Array.isArray(state.items) ? state.items : []
 
   useEffect(() => {
     const controller = new AbortController()
@@ -32,8 +33,7 @@ function EventsPage({ onRequireAuth }: Props) {
         if (controller.signal.aborted) {
           return
         }
-        const message =
-          error instanceof Error ? error.message : 'Не удалось загрузить афишу.'
+        const message = error instanceof Error ? error.message : 'Не удалось загрузить афишу.'
         setState({ status: 'error', items: [], error: message })
       }
     }
@@ -58,31 +58,23 @@ function EventsPage({ onRequireAuth }: Props) {
         <p className="events__eyebrow">Городской портал</p>
         <h1 className="events__title">Афиша мероприятий</h1>
         <p className="events__subtitle">
-          События города на ближайшие недели: выставки, лекции, концерты и
-          спектакли. Выбирайте формат и планируйте вечер заранее.
+          События города на ближайшие недели: выставки, лекции, концерты и спектакли. Выбирайте
+          формат и планируйте вечер заранее.
         </p>
       </div>
 
       <div className="events__panel">
         <div className="events__panel-title">Ближайшие события</div>
-        {state.status === 'loading' && (
+        {(state.status === 'idle' || state.status === 'loading') && (
           <div className="events__status">Загружаем афишу...</div>
         )}
-        {state.status === 'error' && (
-          <div className="events__status events__status--error">
-            {state.error}
-          </div>
-        )}
-        {state.status === 'success' && state.items.length === 0 && (
+        {state.status === 'error' && <div className="events__status events__status--error">{state.error}</div>}
+        {state.status === 'success' && safeItems.length === 0 && (
           <div className="events__status">Событий пока нет.</div>
         )}
         <div className="events__grid">
-          {state.items.map((event) => (
-            <EventCard
-              key={event.id}
-              event={event}
-              onDetails={(selected) => setActiveEvent(selected)}
-            />
+          {safeItems.map((event) => (
+            <EventCard key={event.id} event={event} onDetails={(selected) => setActiveEvent(selected)} />
           ))}
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { cancelBooking, listBookings } from '../api/bookings'
 import { useAuth } from '../context/AuthContext'
 import type { Booking } from '../types/booking'
@@ -13,11 +13,12 @@ type LoadState = {
   error: string | null
 }
 
-const emptyState: LoadState = { status: 'idle', items: [], error: null }
+const emptyState: LoadState = { status: 'loading', items: [], error: null }
 
 function ProfileModal({ onClose }: Props) {
   const { user, logout } = useAuth()
   const [state, setState] = useState<LoadState>(emptyState)
+  const safeItems = Array.isArray(state.items) ? state.items : []
 
   const loadBookings = async () => {
     setState((prev) => ({ ...prev, status: 'loading', error: null }))
@@ -65,27 +66,25 @@ function ProfileModal({ onClose }: Props) {
 
         <div className="modal__section">
           <h3 className="modal__section-title">Мои бронирования</h3>
-          {state.status === 'loading' && <div className="modal__status">Загрузка...</div>}
+          {(state.status === 'idle' || state.status === 'loading') && (
+            <div className="modal__status">Загрузка...</div>
+          )}
           {state.error && <div className="modal__status modal__status--error">{state.error}</div>}
-          {state.status === 'ready' && state.items.length === 0 && (
+          {state.status === 'ready' && safeItems.length === 0 && (
             <div className="modal__status">Бронирований пока нет.</div>
           )}
           <div className="modal__list">
-            {state.items.map((booking) => (
+            {safeItems.map((booking) => (
               <div className="modal__card" key={booking.id}>
                 <div>
                   <div className="modal__card-title">Бронь #{booking.id.slice(0, 6)}</div>
                   <div className="modal__card-meta">
-                    {booking.seats.join(', ')} · {booking.totalPrice} {booking.currency}
+                    {booking.seats.join(', ')} - {booking.totalPrice} {booking.currency}
                   </div>
                   <div className="modal__card-status">Статус: {booking.status}</div>
                 </div>
                 {booking.status === 'active' && (
-                  <button
-                    className="modal__secondary"
-                    type="button"
-                    onClick={() => handleCancel(booking.id)}
-                  >
+                  <button className="modal__secondary" type="button" onClick={() => handleCancel(booking.id)}>
                     Отменить
                   </button>
                 )}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { listVenues } from '../api/venues'
 import type { Venue } from '../types/venue'
 
@@ -8,7 +8,7 @@ type LoadState = {
   error: string | null
 }
 
-const emptyState: LoadState = { status: 'idle', items: [], error: null }
+const emptyState: LoadState = { status: 'loading', items: [], error: null }
 
 type Props = {
   onRequireAuth: () => void
@@ -16,6 +16,7 @@ type Props = {
 
 function VenuesPage({ onRequireAuth }: Props) {
   const [state, setState] = useState<LoadState>(emptyState)
+  const safeItems = Array.isArray(state.items) ? state.items : []
 
   useEffect(() => {
     const controller = new AbortController()
@@ -29,8 +30,7 @@ function VenuesPage({ onRequireAuth }: Props) {
         if (controller.signal.aborted) {
           return
         }
-        const message =
-          error instanceof Error ? error.message : 'Не удалось загрузить площадки.'
+        const message = error instanceof Error ? error.message : 'Не удалось загрузить площадки.'
         setState({ status: 'error', items: [], error: message })
       }
     }
@@ -46,24 +46,21 @@ function VenuesPage({ onRequireAuth }: Props) {
         <p className="events__eyebrow">Площадки города</p>
         <h1 className="events__title">Места проведения</h1>
         <p className="events__subtitle">
-          Галереи, кинотеатры, лектории и креативные пространства — выбирайте
-          место, куда хочется попасть.
+          Галереи, кинотеатры, лектории и креативные пространства - выбирайте место, куда хочется попасть.
         </p>
       </div>
 
       <div className="events__panel">
         <div className="events__panel-title">Список площадок</div>
-        {state.status === 'loading' && (
+        {(state.status === 'idle' || state.status === 'loading') && (
           <div className="events__status">Загружаем площадки...</div>
         )}
-        {state.status === 'error' && (
-          <div className="events__status events__status--error">{state.error}</div>
-        )}
-        {state.status === 'ready' && state.items.length === 0 && (
+        {state.status === 'error' && <div className="events__status events__status--error">{state.error}</div>}
+        {state.status === 'ready' && safeItems.length === 0 && (
           <div className="events__status">Площадок пока нет.</div>
         )}
         <div className="venues__grid">
-          {state.items.map((venue) => (
+          {safeItems.map((venue) => (
             <article className="venue-card" key={venue.id}>
               <div className="venue-card__name">{venue.name}</div>
               <div className="venue-card__address">{venue.address}</div>
