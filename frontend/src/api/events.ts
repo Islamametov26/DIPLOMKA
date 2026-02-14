@@ -13,6 +13,7 @@ export async function listEvents(signal?: AbortSignal): Promise<Event[]> {
 type EventPayload = {
   title: string
   description: string
+  imageUrl: string
   startAt: string
   endAt: string
   venueId: string

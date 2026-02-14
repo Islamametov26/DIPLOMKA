@@ -2,7 +2,9 @@ package httpapi
 
 import (
 	"errors"
+	"net/url"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -66,6 +68,7 @@ func (h *EventHandler) Get(c *gin.Context) {
 type eventPayload struct {
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
+	ImageURL    string    `json:"imageUrl"`
 	StartAt     string    `json:"startAt"`
 	EndAt       string    `json:"endAt"`
 	VenueID     uuid.UUID `json:"venueId"`
@@ -316,6 +319,13 @@ func parseEventPayload(payload eventPayload) (domain.Event, bool) {
 	if payload.Title == "" || payload.Description == "" || payload.VenueID == uuid.Nil {
 		return domain.Event{}, false
 	}
+	imageURL := strings.TrimSpace(payload.ImageURL)
+	if imageURL != "" {
+		parsed, err := url.ParseRequestURI(imageURL)
+		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+			return domain.Event{}, false
+		}
+	}
 
 	startAt, err := time.Parse(time.RFC3339, payload.StartAt)
 	if err != nil {
@@ -329,6 +339,7 @@ func parseEventPayload(payload eventPayload) (domain.Event, bool) {
 	return domain.Event{
 		Title:       payload.Title,
 		Description: payload.Description,
+		ImageURL:    imageURL,
 		StartAt:     startAt.UTC(),
 		EndAt:       endAt.UTC(),
 		VenueID:     payload.VenueID,

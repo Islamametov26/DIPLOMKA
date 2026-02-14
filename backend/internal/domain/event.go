@@ -7,17 +7,18 @@ import (
 )
 
 type Event struct {
-    ID          uuid.UUID `json:"id"`
-    Title       string    `json:"title"`
-    Description string    `json:"description"`
-    StartAt     time.Time `json:"startAt"`
-    EndAt       time.Time `json:"endAt"`
-    VenueID     uuid.UUID `json:"venueId"`
-    Published   bool      `json:"published"`
+	ID          uuid.UUID `json:"id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	ImageURL    string    `json:"imageUrl"`
+	StartAt     time.Time `json:"startAt"`
+	EndAt       time.Time `json:"endAt"`
+	VenueID     uuid.UUID `json:"venueId"`
+	Published   bool      `json:"published"`
 
-    CreatedBy   uuid.UUID `json:"createdBy"` 
+	CreatedBy uuid.UUID `json:"createdBy"`
 
-    CreatedAt   time.Time `json:"createdAt"`
-    UpdatedAt   time.Time `json:"updatedAt"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 

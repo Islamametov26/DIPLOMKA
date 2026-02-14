@@ -1,4 +1,4 @@
-package memory
+﻿package memory
 
 import (
 	"context"
@@ -22,6 +22,7 @@ func NewEventRepository() *EventRepository {
 				ID:          uuid.New(),
 				Title:       "Открытие выставки",
 				Description: "Вечер современного искусства с куратором.",
+				ImageURL:    "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?auto=format&fit=crop&w=1400&q=80",
 				StartAt:     now.Add(48 * time.Hour),
 				EndAt:       now.Add(50 * time.Hour),
 				VenueID:     venueID,

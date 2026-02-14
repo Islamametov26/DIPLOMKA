@@ -104,6 +104,12 @@ function EventDetailsModal({ event, onClose, onRequireAuth, onDelete }: Props) {
     <div className="modal" role="dialog" aria-modal="true">
       <div className="modal__overlay" onClick={onClose} />
       <div className="modal__content" role="document">
+        {event.imageUrl ? (
+          <img className="modal__hero" src={event.imageUrl} alt={event.title} loading="lazy" />
+        ) : (
+          <div className="modal__hero modal__hero--placeholder" aria-hidden="true" />
+        )}
+
         <div className="modal__header">
           <div>
             <p className="modal__eyebrow">Событие</p>
@@ -131,12 +137,7 @@ function EventDetailsModal({ event, onClose, onRequireAuth, onDelete }: Props) {
             Забронировать
           </button>
           {onDelete && (
-            <button
-              className="modal__danger"
-              type="button"
-              onClick={handleDelete}
-              disabled={isDeleting}
-            >
+            <button className="modal__danger" type="button" onClick={handleDelete} disabled={isDeleting}>
               {isDeleting ? 'Удаление...' : 'Удалить событие'}
             </button>
           )}

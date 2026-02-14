@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { createEvent, deleteEvent, updateEvent } from '../api/events'
 import type { Event } from '../types/event'
 import type { Venue } from '../types/venue'
@@ -12,12 +12,12 @@ type Props = {
 const emptyForm = {
   title: '',
   description: '',
+  imageUrl: '',
   startAt: '',
   endAt: '',
   venueId: '',
   published: false,
 }
-
 
 type FormState = typeof emptyForm
 
@@ -61,6 +61,7 @@ function AdminPanel({ events, venues, onSaved }: Props) {
     setForm({
       title: event.title,
       description: event.description,
+      imageUrl: event.imageUrl || '',
       startAt: toDateTimeLocal(event.startAt),
       endAt: toDateTimeLocal(event.endAt),
       venueId: event.venueId,
@@ -72,7 +73,6 @@ function AdminPanel({ events, venues, onSaved }: Props) {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
-
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     setStatus('saving')
@@ -81,6 +81,7 @@ function AdminPanel({ events, venues, onSaved }: Props) {
     const payload = {
       title: form.title.trim(),
       description: form.description.trim(),
+      imageUrl: form.imageUrl.trim(),
       startAt: new Date(form.startAt).toISOString(),
       endAt: new Date(form.endAt).toISOString(),
       venueId: form.venueId.trim(),
@@ -134,11 +135,7 @@ function AdminPanel({ events, venues, onSaved }: Props) {
         </div>
         <div className="admin__select">
           <label htmlFor="eventSelect">Редактировать</label>
-          <select
-            id="eventSelect"
-            value={selectedId}
-            onChange={(event) => handleSelect(event.target.value)}
-          >
+          <select id="eventSelect" value={selectedId} onChange={(event) => handleSelect(event.target.value)}>
             <option value="">Новое событие</option>
             {events.map((item) => (
               <option key={item.id} value={item.id}>
@@ -152,12 +149,7 @@ function AdminPanel({ events, venues, onSaved }: Props) {
       <form className="admin__form" onSubmit={handleSubmit}>
         <label>
           Название
-          <input
-            type="text"
-            value={form.title}
-            onChange={(event) => handleChange('title', event.target.value)}
-            required
-          />
+          <input type="text" value={form.title} onChange={(event) => handleChange('title', event.target.value)} required />
         </label>
         <label>
           Описание
@@ -168,6 +160,18 @@ function AdminPanel({ events, venues, onSaved }: Props) {
             required
           />
         </label>
+        <label>
+          Картинка (URL)
+          <input
+            type="url"
+            placeholder="https://..."
+            value={form.imageUrl}
+            onChange={(event) => handleChange('imageUrl', event.target.value)}
+          />
+        </label>
+        {form.imageUrl && (
+          <img className="admin__preview" src={form.imageUrl} alt="Превью события" loading="lazy" />
+        )}
         <div className="admin__grid">
           <label>
             Начало
@@ -191,11 +195,7 @@ function AdminPanel({ events, venues, onSaved }: Props) {
         <label>
           Площадка
           <div className="admin__inline">
-            <select
-              value={form.venueId}
-              onChange={(event) => handleChange('venueId', event.target.value)}
-              required
-            >
+            <select value={form.venueId} onChange={(event) => handleChange('venueId', event.target.value)} required>
               <option value="">Выберите площадку</option>
               {venues.map((venue) => (
                 <option key={venue.id} value={venue.id}>
