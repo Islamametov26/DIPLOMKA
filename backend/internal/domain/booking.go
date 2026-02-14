@@ -10,6 +10,11 @@ type Booking struct {
 	ID         uuid.UUID `json:"id"`
 	UserID     uuid.UUID `json:"userId"`
 	EventID    uuid.UUID `json:"eventId"`
+	EventTitle string    `json:"eventTitle"`
+	EventImage string    `json:"eventImage"`
+	EventStart time.Time `json:"eventStart"`
+	EventEnd   time.Time `json:"eventEnd"`
+	VenueName  string    `json:"venueName"`
 	Status     string    `json:"status"`
 	TotalPrice int       `json:"totalPrice"`
 	Currency   string    `json:"currency"`

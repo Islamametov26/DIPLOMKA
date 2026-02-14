@@ -19,10 +19,25 @@ func NewBookingRepository(db *sql.DB) *BookingRepository {
 
 func (r *BookingRepository) ListByUser(ctx context.Context, userID uuid.UUID) ([]domain.Booking, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT id, user_id, event_id, status, total_price, currency, created_at, updated_at
-		FROM bookings
-		WHERE user_id = $1
-		ORDER BY created_at DESC
+		SELECT
+			b.id,
+			b.user_id,
+			b.event_id,
+			e.title,
+			e.image_url,
+			e.start_at,
+			e.end_at,
+			v.name,
+			b.status,
+			b.total_price,
+			b.currency,
+			b.created_at,
+			b.updated_at
+		FROM bookings b
+		JOIN events e ON e.id = b.event_id
+		JOIN venues v ON v.id = e.venue_id
+		WHERE b.user_id = $1
+		ORDER BY b.created_at DESC
 	`, userID)
 	if err != nil {
 		return nil, err
@@ -36,6 +51,11 @@ func (r *BookingRepository) ListByUser(ctx context.Context, userID uuid.UUID) ([
 			&booking.ID,
 			&booking.UserID,
 			&booking.EventID,
+			&booking.EventTitle,
+			&booking.EventImage,
+			&booking.EventStart,
+			&booking.EventEnd,
+			&booking.VenueName,
 			&booking.Status,
 			&booking.TotalPrice,
 			&booking.Currency,

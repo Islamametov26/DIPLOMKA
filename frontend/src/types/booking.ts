@@ -1,6 +1,11 @@
 export type Booking = {
   id: string
   eventId: string
+  eventTitle: string
+  eventImage: string
+  eventStart: string
+  eventEnd: string
+  venueName: string
   status: string
   totalPrice: number
   currency: string
