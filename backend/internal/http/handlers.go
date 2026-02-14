@@ -199,6 +199,16 @@ func (h *VenueHandler) Get(c *gin.Context) {
 	c.JSON(http.StatusOK, venue)
 }
 
+func (h *VenueHandler) List(c *gin.Context) {
+	venues, err := h.service.List(c.Request.Context())
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"items": venues})
+}
+
 type venuePayload struct {
 	ID      string `json:"id"`
 	Name    string `json:"name"`
