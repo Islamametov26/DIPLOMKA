@@ -105,7 +105,7 @@ function App() {
         {isAdmin ? (
           <AdminPage onRequireAuth={() => setAuthOpen(true)} />
         ) : isVenues ? (
-          <VenuesPage onRequireAuth={() => setAuthOpen(true)} />
+          <VenuesPage onRequireAuth={() => setAuthOpen(true)} onAddEvent={goToAdmin} />
         ) : (
           <EventsPage onRequireAuth={() => setAuthOpen(true)} />
         )}

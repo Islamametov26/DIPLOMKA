@@ -13,9 +13,10 @@ const emptyState: LoadState = { status: 'loading', items: [], error: null }
 
 type Props = {
   onRequireAuth: () => void
+  onAddEvent: () => void
 }
 
-function VenuesPage({ onRequireAuth }: Props) {
+function VenuesPage({ onRequireAuth, onAddEvent }: Props) {
   const { user } = useAuth()
   const [state, setState] = useState<LoadState>(emptyState)
   const safeItems = Array.isArray(state.items) ? state.items : []
@@ -68,6 +69,14 @@ function VenuesPage({ onRequireAuth }: Props) {
     }
   }
 
+  const handleAddEvent = () => {
+    if (user) {
+      onAddEvent()
+      return
+    }
+    onRequireAuth()
+  }
+
   return (
     <section className="venues">
       <div className="events__hero">
@@ -92,7 +101,7 @@ function VenuesPage({ onRequireAuth }: Props) {
             <article className="venue-card" key={venue.id}>
               <div className="venue-card__name">{venue.name}</div>
               <div className="venue-card__address">{venue.address}</div>
-              <button className="venue-card__button" type="button" onClick={onRequireAuth}>
+              <button className="venue-card__button" type="button" onClick={handleAddEvent}>
                 Добавить событие
               </button>
               <button
