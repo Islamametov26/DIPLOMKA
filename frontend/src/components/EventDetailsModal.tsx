@@ -9,7 +9,7 @@ type Props = {
   event: Event
   onClose: () => void
   onRequireAuth: () => void
-  onDelete: (eventId: string) => Promise<void>
+  onDelete?: (eventId: string) => Promise<void>
 }
 
 function EventDetailsModal({ event, onClose, onRequireAuth, onDelete }: Props) {
@@ -74,6 +74,10 @@ function EventDetailsModal({ event, onClose, onRequireAuth, onDelete }: Props) {
   }
 
   const handleDelete = async () => {
+    if (!onDelete) {
+      setError('Удаление события сейчас недоступно.')
+      return
+    }
     if (!user) {
       onRequireAuth()
       return
@@ -127,7 +131,7 @@ function EventDetailsModal({ event, onClose, onRequireAuth, onDelete }: Props) {
           <button className="modal__primary" type="button" onClick={handleBooking}>
             Забронировать
           </button>
-          {isPastEvent && (
+          {isPastEvent && onDelete && (
             <button
               className="modal__danger"
               type="button"
