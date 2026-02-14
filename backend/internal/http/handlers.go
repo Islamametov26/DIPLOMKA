@@ -122,7 +122,8 @@ func (h *EventHandler) Update(c *gin.Context) {
 		return
 	}
 
-	if existing.CreatedBy != userID {
+	// Legacy/seed events can have no owner; allow authenticated cleanup for them.
+	if existing.CreatedBy != uuid.Nil && existing.CreatedBy != userID {
 		writeError(c, http.StatusForbidden, "forbidden")
 		return
 	}
