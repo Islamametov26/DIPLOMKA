@@ -132,7 +132,20 @@ func (r *VenueRepository) Update(ctx context.Context, venue domain.Venue) (domai
 }
 
 func (r *VenueRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	result, err := r.db.ExecContext(ctx, `DELETE FROM venues WHERE id = $1`, id)
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	// Venue has RESTRICT reference from events; remove dependent events first.
+	if _, err := tx.ExecContext(ctx, `DELETE FROM events WHERE venue_id = $1`, id); err != nil {
+		return err
+	}
+
+	result, err := tx.ExecContext(ctx, `DELETE FROM venues WHERE id = $1`, id)
 	if err != nil {
 		return err
 	}
@@ -142,6 +155,10 @@ func (r *VenueRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 	if rows == 0 {
 		return repository.ErrNotFound
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
 	}
 	return nil
 }
