@@ -549,6 +549,22 @@
   justify-self: start;
 }
 
+.venue-card__danger {
+  border: 1px solid rgba(220, 50, 50, 0.5);
+  background: transparent;
+  color: #e55c5c;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+  justify-self: start;
+}
+
+.venue-card__danger:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .modal {
   position: fixed;
   inset: 0;
