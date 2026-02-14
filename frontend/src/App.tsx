@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import './App.css'
 import AuthModal from './components/AuthModal'
 import ProfileModal from './components/ProfileModal'
@@ -46,9 +46,19 @@ function App() {
     setRoute(path)
   }
 
+  const handleNavLink =
+    (path: string) => (event: React.MouseEvent<HTMLAnchorElement>) => {
+      if (event.defaultPrevented) {
+        return
+      }
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return
+      }
+      event.preventDefault()
+      navigate(path)
+    }
+
   const goToAdmin = () => navigate('/admin')
-  const goToHome = () => navigate('/')
-  const goToVenues = () => navigate('/venues')
 
   return (
     <div className="app">
@@ -57,42 +67,23 @@ function App() {
         <nav className="app__nav" aria-label="Primary" />
         <div className="app__actions">
           <div className="app__nav">
-            <button
-              className={`app__link${!isAdmin && !isVenues ? ' app__link--active' : ''}`}
-              type="button"
-              onClick={goToHome}
-            >
+            <a className={`app__link${!isAdmin && !isVenues ? ' app__link--active' : ''}`} href="/" onClick={handleNavLink('/')}>
               Афиша
-            </button>
-            <button
+            </a>
+            <a
               className={`app__link${isVenues ? ' app__link--active' : ''}`}
-              type="button"
-              onClick={goToVenues}
+              href="/venues"
+              onClick={handleNavLink('/venues')}
             >
               Площадки
-            </button>
+            </a>
           </div>
-          <button
-            className="app__profile"
-            type="button"
-            onClick={isAdmin ? goToHome : goToAdmin}
-          >
-            {isAdmin ? 'На сайт' : 'Админка'}
-          </button>
           {user ? (
-            <button
-              className="app__profile"
-              type="button"
-              onClick={() => setProfileOpen(true)}
-            >
+            <button className="app__profile" type="button" onClick={() => setProfileOpen(true)}>
               {user.email}
             </button>
           ) : (
-            <button
-              className="app__profile"
-              type="button"
-              onClick={() => setAuthOpen(true)}
-            >
+            <button className="app__profile" type="button" onClick={() => setAuthOpen(true)}>
               Войти
             </button>
           )}
