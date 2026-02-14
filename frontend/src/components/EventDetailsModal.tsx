@@ -98,7 +98,6 @@ function EventDetailsModal({ event, onClose, onRequireAuth, onDelete }: Props) {
     }
   }
 
-  const isPastEvent = new Date(event.endAt).getTime() < Date.now()
   const total = selectedSeats.length * seatPrice
 
   return (
@@ -131,7 +130,7 @@ function EventDetailsModal({ event, onClose, onRequireAuth, onDelete }: Props) {
           <button className="modal__primary" type="button" onClick={handleBooking}>
             Забронировать
           </button>
-          {isPastEvent && onDelete && (
+          {onDelete && (
             <button
               className="modal__danger"
               type="button"
