@@ -1,9 +1,12 @@
-const DEFAULT_BASE_URL = 'http://localhost:8080'
+const DEFAULT_BASE_URL =
+  typeof window !== 'undefined' && window.location?.origin
+    ? window.location.origin
+    : 'http://localhost:8080'
 
+const envBaseUrl = import.meta.env.VITE_API_BASE_URL
 const baseUrl =
-  typeof import.meta.env.VITE_API_BASE_URL === 'string' &&
-  import.meta.env.VITE_API_BASE_URL.length > 0
-    ? import.meta.env.VITE_API_BASE_URL
+  typeof envBaseUrl === 'string' && envBaseUrl.trim().length > 0
+    ? envBaseUrl.trim()
     : DEFAULT_BASE_URL
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
