@@ -58,10 +58,8 @@ function VenuesPage() {
   )
 
   const venueEvents = useMemo(() => {
-    const now = Date.now()
     return safeEvents
       .filter((event) => event.venueId === selectedVenueId)
-      .filter((event) => new Date(event.startAt).getTime() >= now)
       .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
   }, [safeEvents, selectedVenueId])
 
@@ -112,7 +110,7 @@ function VenuesPage() {
         <div className="events__panel">
           <div className="events__panel-title">События на площадке: {selectedVenue.name}</div>
           {venueEvents.length === 0 && (
-            <div className="events__status">На этой площадке пока нет предстоящих событий.</div>
+            <div className="events__status">На этой площадке пока нет событий.</div>
           )}
           <div className="venue-events">
             {venueEvents.map((event) => (
