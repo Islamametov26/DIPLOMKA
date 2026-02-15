@@ -99,7 +99,6 @@ function EventsPage({ onRequireAuth }: Props) {
       </div>
 
       <div className="events__panel">
-        <div className="events__panel-title">Ближайшие события</div>
         <div className="events__search">
           <input
             className="events__search-input"
@@ -130,6 +129,7 @@ function EventsPage({ onRequireAuth }: Props) {
             ))}
           </div>
         )}
+        <div className="events__panel-title">Ближайшие события</div>
         {(state.status === 'idle' || state.status === 'loading') && (
           <div className="events__status">Загружаем афишу...</div>
         )}
