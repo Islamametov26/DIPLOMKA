@@ -65,8 +65,12 @@ function EventDetailsModal({ event, onClose, onRequireAuth }: Props) {
       await createBooking(event.id, selectedSeats)
       setStatus('success')
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Не удалось оформить бронь.'
-      setError(message)
+      const message = err instanceof Error ? err.message : ''
+      if (message.includes('409') || message.toLowerCase().includes('conflict') || message.includes('already booked')) {
+        setError('Вы уже купили эти билеты или места уже заняты.')
+      } else {
+        setError('Не удалось оформить бронь.')
+      }
       setStatus('error')
     }
   }

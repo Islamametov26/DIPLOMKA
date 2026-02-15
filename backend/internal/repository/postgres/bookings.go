@@ -96,6 +96,38 @@ func (r *BookingRepository) Create(ctx context.Context, booking domain.Booking) 
 		}
 	}()
 
+	var lockedEventID uuid.UUID
+	if err = tx.QueryRowContext(ctx, `
+		SELECT id
+		FROM events
+		WHERE id = $1
+		FOR UPDATE
+	`, booking.EventID).Scan(&lockedEventID); err != nil {
+		if err == sql.ErrNoRows {
+			return domain.Booking{}, repository.ErrNotFound
+		}
+		return domain.Booking{}, err
+	}
+
+	for _, seat := range booking.Seats {
+		var exists bool
+		if err = tx.QueryRowContext(ctx, `
+			SELECT EXISTS (
+				SELECT 1
+				FROM booking_seats bs
+				JOIN bookings b ON b.id = bs.booking_id
+				WHERE b.event_id = $1
+				  AND b.status = 'active'
+				  AND bs.seat_label = $2
+			)
+		`, booking.EventID, seat).Scan(&exists); err != nil {
+			return domain.Booking{}, err
+		}
+		if exists {
+			return domain.Booking{}, repository.ErrConflict
+		}
+	}
+
 	row := tx.QueryRowContext(ctx, `
 		INSERT INTO bookings (user_id, event_id, status, total_price, currency)
 		VALUES ($1, $2, $3, $4, $5)

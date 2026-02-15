@@ -54,6 +54,10 @@ func (h *BookingHandler) Create(c *gin.Context) {
 
 	booking, err := h.service.Create(c.Request.Context(), userID, payload.EventID, payload.Seats)
 	if err != nil {
+		if err == repository.ErrConflict {
+			writeError(c, http.StatusConflict, "seats already booked")
+			return
+		}
 		writeServiceError(c, err)
 		return
 	}
