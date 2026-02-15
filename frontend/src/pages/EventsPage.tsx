@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { listCategories } from '../api/categories'
 import { listEvents } from '../api/events'
+import { listVenues } from '../api/venues'
 import EventCard from '../components/EventCard'
 import EventDetailsModal from '../components/EventDetailsModal'
 import type { Category } from '../types/category'
 import type { Event } from '../types/event'
+import type { Venue } from '../types/venue'
 
 const emptyState = {
   status: 'loading' as const,
   items: [] as Event[],
   categories: [] as Category[],
+  venues: [] as Venue[],
   error: '' as string | null,
 }
 
@@ -23,8 +26,10 @@ function EventsPage({ onRequireAuth }: Props) {
   const [state, setState] = useState<EventsState>(emptyState)
   const [activeEvent, setActiveEvent] = useState<Event | null>(null)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all')
+  const [query, setQuery] = useState('')
   const safeItems = Array.isArray(state.items) ? state.items : []
   const safeCategories = Array.isArray(state.categories) ? state.categories : []
+  const safeVenues = Array.isArray(state.venues) ? state.venues : []
 
   useEffect(() => {
     const controller = new AbortController()
@@ -32,17 +37,18 @@ function EventsPage({ onRequireAuth }: Props) {
     const load = async () => {
       setState((prev) => ({ ...prev, status: 'loading', error: null }))
       try {
-        const [items, categories] = await Promise.all([
+        const [items, categories, venues] = await Promise.all([
           listEvents(controller.signal),
           listCategories(controller.signal),
+          listVenues(),
         ])
-        setState({ status: 'success', items, categories, error: null })
+        setState({ status: 'success', items, categories, venues, error: null })
       } catch (error) {
         if (controller.signal.aborted) {
           return
         }
         const message = error instanceof Error ? error.message : 'Не удалось загрузить афишу.'
-        setState({ status: 'error', items: [], categories: [], error: message })
+        setState({ status: 'error', items: [], categories: [], venues: [], error: message })
       }
     }
 
@@ -52,11 +58,34 @@ function EventsPage({ onRequireAuth }: Props) {
   }, [])
 
   const filteredItems = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase()
     if (selectedCategoryId === 'all') {
-      return safeItems
+      if (!normalizedQuery) {
+        return safeItems
+      }
+      return safeItems.filter((event) =>
+        `${event.title} ${event.description}`.toLowerCase().includes(normalizedQuery),
+      )
     }
-    return safeItems.filter((event) => event.categoryId === selectedCategoryId)
-  }, [safeItems, selectedCategoryId])
+    return safeItems.filter((event) => {
+      if (event.categoryId !== selectedCategoryId) {
+        return false
+      }
+      if (!normalizedQuery) {
+        return true
+      }
+      return `${event.title} ${event.description}`.toLowerCase().includes(normalizedQuery)
+    })
+  }, [query, safeItems, selectedCategoryId])
+
+  const venueById = useMemo(
+    () =>
+      safeVenues.reduce<Record<string, string>>((acc, venue) => {
+        acc[venue.id] = venue.name
+        return acc
+      }, {}),
+    [safeVenues],
+  )
 
   return (
     <section className="events">
@@ -71,6 +100,15 @@ function EventsPage({ onRequireAuth }: Props) {
 
       <div className="events__panel">
         <div className="events__panel-title">Ближайшие события</div>
+        <div className="events__search">
+          <input
+            className="events__search-input"
+            type="search"
+            placeholder="Поиск по названию или описанию..."
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </div>
         {safeCategories.length > 0 && (
           <div className="events__filters">
             <button
@@ -101,7 +139,12 @@ function EventsPage({ onRequireAuth }: Props) {
         )}
         <div className="events__grid">
           {filteredItems.map((event) => (
-            <EventCard key={event.id} event={event} onDetails={(selected) => setActiveEvent(selected)} />
+            <EventCard
+              key={event.id}
+              event={event}
+              venueName={venueById[event.venueId]}
+              onDetails={(selected) => setActiveEvent(selected)}
+            />
           ))}
         </div>
       </div>

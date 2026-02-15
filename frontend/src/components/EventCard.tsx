@@ -15,10 +15,11 @@ function formatRange(event: Event) {
 
 type Props = {
   event: Event
+  venueName?: string
   onDetails: (event: Event) => void
 }
 
-function EventCard({ event, onDetails }: Props) {
+function EventCard({ event, venueName, onDetails }: Props) {
   return (
     <article className="event-card">
       {event.imageUrl ? (
@@ -33,7 +34,7 @@ function EventCard({ event, onDetails }: Props) {
       <h3 className="event-card__title">{event.title}</h3>
       <p className="event-card__description">{event.description}</p>
       <div className="event-card__footer">
-        <span className="event-card__meta">Площадка: {event.venueId}</span>
+        <span className="event-card__meta">Площадка: {venueName || 'Неизвестно'}</span>
         <button className="event-card__button" type="button" onClick={() => onDetails(event)}>
           Подробнее
         </button>

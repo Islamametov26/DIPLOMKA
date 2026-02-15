@@ -21,6 +21,8 @@ const emptyState: LoadState = {
 function VenuesPage() {
   const [state, setState] = useState<LoadState>(emptyState)
   const [selectedVenueId, setSelectedVenueId] = useState<string>('')
+  const [venueQuery, setVenueQuery] = useState('')
+  const [eventQuery, setEventQuery] = useState('')
   const safeVenues = Array.isArray(state.venues) ? state.venues : []
   const safeEvents = Array.isArray(state.events) ? state.events : []
 
@@ -57,11 +59,28 @@ function VenuesPage() {
     [safeVenues, selectedVenueId],
   )
 
+  const filteredVenues = useMemo(() => {
+    const normalizedQuery = venueQuery.trim().toLowerCase()
+    if (!normalizedQuery) {
+      return safeVenues
+    }
+    return safeVenues.filter((venue) =>
+      `${venue.name} ${venue.address}`.toLowerCase().includes(normalizedQuery),
+    )
+  }, [safeVenues, venueQuery])
+
   const venueEvents = useMemo(() => {
+    const normalizedQuery = eventQuery.trim().toLowerCase()
     return safeEvents
       .filter((event) => event.venueId === selectedVenueId)
+      .filter((event) => {
+        if (!normalizedQuery) {
+          return true
+        }
+        return `${event.title} ${event.description}`.toLowerCase().includes(normalizedQuery)
+      })
       .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
-  }, [safeEvents, selectedVenueId])
+  }, [eventQuery, safeEvents, selectedVenueId])
 
   return (
     <section className="venues">
@@ -75,16 +94,25 @@ function VenuesPage() {
 
       <div className="events__panel">
         <div className="events__panel-title">Список площадок</div>
+        <div className="events__search">
+          <input
+            className="events__search-input"
+            type="search"
+            placeholder="Поиск площадки по названию или адресу..."
+            value={venueQuery}
+            onChange={(event) => setVenueQuery(event.target.value)}
+          />
+        </div>
         {(state.status === 'idle' || state.status === 'loading') && (
           <div className="events__status">Загружаем площадки...</div>
         )}
         {state.status === 'error' && <div className="events__status events__status--error">{state.error}</div>}
-        {state.status === 'ready' && safeVenues.length === 0 && (
+        {state.status === 'ready' && filteredVenues.length === 0 && (
           <div className="events__status">Площадок пока нет.</div>
         )}
 
         <div className="venues__grid">
-          {safeVenues.map((venue) => {
+          {filteredVenues.map((venue) => {
             const isSelected = selectedVenueId === venue.id
             return (
               <article
@@ -109,6 +137,15 @@ function VenuesPage() {
       {selectedVenue && (
         <div className="events__panel">
           <div className="events__panel-title">События на площадке: {selectedVenue.name}</div>
+          <div className="events__search">
+            <input
+              className="events__search-input"
+              type="search"
+              placeholder="Поиск события на выбранной площадке..."
+              value={eventQuery}
+              onChange={(event) => setEventQuery(event.target.value)}
+            />
+          </div>
           {venueEvents.length === 0 && (
             <div className="events__status">На этой площадке пока нет событий.</div>
           )}
