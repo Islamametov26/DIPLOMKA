@@ -2,8 +2,8 @@ package httpapi
 
 import (
 	"errors"
-	"net/url"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -72,6 +72,7 @@ type eventPayload struct {
 	StartAt     string    `json:"startAt"`
 	EndAt       string    `json:"endAt"`
 	VenueID     uuid.UUID `json:"venueId"`
+	CategoryID  uuid.UUID `json:"categoryId"`
 	Published   bool      `json:"published"`
 }
 
@@ -316,7 +317,7 @@ func parseUUID(raw string) (uuid.UUID, bool) {
 }
 
 func parseEventPayload(payload eventPayload) (domain.Event, bool) {
-	if payload.Title == "" || payload.Description == "" || payload.VenueID == uuid.Nil {
+	if payload.Title == "" || payload.Description == "" || payload.VenueID == uuid.Nil || payload.CategoryID == uuid.Nil {
 		return domain.Event{}, false
 	}
 	imageURL := strings.TrimSpace(payload.ImageURL)
@@ -343,6 +344,7 @@ func parseEventPayload(payload eventPayload) (domain.Event, bool) {
 		StartAt:     startAt.UTC(),
 		EndAt:       endAt.UTC(),
 		VenueID:     payload.VenueID,
+		CategoryID:  payload.CategoryID,
 		Published:   payload.Published,
 	}, true
 }

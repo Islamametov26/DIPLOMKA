@@ -1,11 +1,13 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { createEvent, deleteEvent, updateEvent } from '../api/events'
+import type { Category } from '../types/category'
 import type { Event } from '../types/event'
 import type { Venue } from '../types/venue'
 
 type Props = {
   events: Event[]
   venues: Venue[]
+  categories: Category[]
   onSaved: () => void
 }
 
@@ -16,6 +18,7 @@ const emptyForm = {
   startAt: '',
   endAt: '',
   venueId: '',
+  categoryId: '',
   published: false,
 }
 
@@ -37,7 +40,7 @@ function toDateTimeLocal(value: string) {
   )}:${pad(date.getMinutes())}`
 }
 
-function AdminPanel({ events, venues, onSaved }: Props) {
+function AdminPanel({ events, venues, categories, onSaved }: Props) {
   const [selectedId, setSelectedId] = useState('')
   const [form, setForm] = useState<FormState>(emptyForm)
   const [status, setStatus] = useState<Status>('idle')
@@ -63,6 +66,14 @@ function AdminPanel({ events, venues, onSaved }: Props) {
       }, {}),
     [venues],
   )
+  const categoriesById = useMemo(
+    () =>
+      categories.reduce<Record<string, string>>((acc, category) => {
+        acc[category.id] = category.name
+        return acc
+      }, {}),
+    [categories],
+  )
 
   const handleSelect = (id: string) => {
     setSelectedId(id)
@@ -83,6 +94,7 @@ function AdminPanel({ events, venues, onSaved }: Props) {
       startAt: toDateTimeLocal(event.startAt),
       endAt: toDateTimeLocal(event.endAt),
       venueId: event.venueId,
+      categoryId: event.categoryId || '',
       published: event.published,
     })
   }
@@ -100,9 +112,9 @@ function AdminPanel({ events, venues, onSaved }: Props) {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
-    if (!form.startAt || !form.endAt || !form.venueId) {
+    if (!form.startAt || !form.endAt || !form.venueId || !form.categoryId) {
       setStatus('error')
-      setError('Заполните дату, время и площадку.')
+      setError('Заполните дату, время, площадку и категорию.')
       return
     }
 
@@ -116,6 +128,7 @@ function AdminPanel({ events, venues, onSaved }: Props) {
       startAt: new Date(form.startAt).toISOString(),
       endAt: new Date(form.endAt).toISOString(),
       venueId: form.venueId.trim(),
+      categoryId: form.categoryId.trim(),
       published: form.published,
     }
 
@@ -185,7 +198,7 @@ function AdminPanel({ events, venues, onSaved }: Props) {
                 <div className="admin-item__title">{item.title}</div>
                 <div className="admin-item__meta">
                   {new Date(item.startAt).toLocaleString()} · {venuesById[item.venueId] || 'Площадка не найдена'} ·{' '}
-                  {item.published ? 'Опубликовано' : 'Черновик'}
+                  {categoriesById[item.categoryId] || 'Без категории'} · {item.published ? 'Опубликовано' : 'Черновик'}
                 </div>
               </div>
               <div className="admin-item__actions">
@@ -268,6 +281,19 @@ function AdminPanel({ events, venues, onSaved }: Props) {
             </select>
           </div>
         </label>
+        <label>
+          Категория
+          <div className="admin__inline">
+            <select value={form.categoryId} onChange={(event) => handleChange('categoryId', event.target.value)} required>
+              <option value="">Выберите категорию</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </label>
         <label className="admin__checkbox">
           <input
             type="checkbox"
@@ -292,4 +318,3 @@ function AdminPanel({ events, venues, onSaved }: Props) {
 }
 
 export default AdminPanel
-

@@ -14,6 +14,7 @@ type Event struct {
 	StartAt     time.Time `json:"startAt"`
 	EndAt       time.Time `json:"endAt"`
 	VenueID     uuid.UUID `json:"venueId"`
+	CategoryID  uuid.UUID `json:"categoryId"`
 	Published   bool      `json:"published"`
 
 	CreatedBy uuid.UUID `json:"createdBy"`
@@ -21,4 +22,3 @@ type Event struct {
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
-

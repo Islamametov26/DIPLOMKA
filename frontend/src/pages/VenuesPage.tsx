@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { listEvents } from '../api/events'
 import { listVenues } from '../api/venues'
 import type { Event } from '../types/event'
@@ -115,6 +115,11 @@ function VenuesPage() {
           <div className="venue-events">
             {venueEvents.map((event) => (
               <article className="venue-event" key={event.id}>
+                {event.imageUrl ? (
+                  <img className="venue-event__image" src={event.imageUrl} alt={event.title} loading="lazy" />
+                ) : (
+                  <div className="venue-event__image event-card__image--placeholder" aria-hidden="true" />
+                )}
                 <div className="venue-event__title">{event.title}</div>
                 <div className="venue-event__meta">{new Date(event.startAt).toLocaleString()}</div>
                 <div className="venue-event__description">{event.description}</div>

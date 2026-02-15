@@ -17,6 +17,7 @@ type EventPayload = {
   startAt: string
   endAt: string
   venueId: string
+  categoryId: string
   published: boolean
 }
 

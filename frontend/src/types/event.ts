@@ -6,6 +6,7 @@ export type Event = {
   startAt: string
   endAt: string
   venueId: string
+  categoryId: string
   published: boolean
   createdAt: string
   updatedAt: string

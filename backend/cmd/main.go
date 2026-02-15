@@ -50,7 +50,7 @@ func main() {
 	userRepo := postgres.NewUserRepository(dbConn)
 	bookingRepo := postgres.NewBookingRepository(dbConn)
 
-	eventService := service.NewEventService(eventRepo, venueRepo)
+	eventService := service.NewEventService(eventRepo, venueRepo, categoryRepo)
 	venueService := service.NewVenueService(venueRepo)
 	categoryService := service.NewCategoryService(categoryRepo)
 	bookingService := service.NewBookingService(bookingRepo, eventRepo)
