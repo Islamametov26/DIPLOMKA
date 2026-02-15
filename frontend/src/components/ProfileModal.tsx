@@ -144,37 +144,41 @@ function ProfileModal({ onClose }: Props) {
           )}
 
           <div className="modal__list">
-            {visibleItems.map((booking) => (
-              <div className="ticket" key={booking.id}>
-                {booking.eventImage ? (
-                  <img className="ticket__image" src={booking.eventImage} alt={booking.eventTitle} loading="lazy" />
-                ) : (
-                  <div className="ticket__image ticket__image--placeholder" aria-hidden="true" />
-                )}
+            {visibleItems.map((booking) => {
+              const safeSeats = Array.isArray(booking.seats) ? booking.seats : []
 
-                <div className="ticket__main">
-                  <div className="ticket__top">
-                    <div className="ticket__title">{booking.eventTitle}</div>
-                    <div className={`ticket__status ticket__status--${booking.status}`}>
-                      {booking.status === 'active' ? 'Активен' : 'Отменен'}
+              return (
+                <div className="ticket" key={booking.id}>
+                  {booking.eventImage ? (
+                    <img className="ticket__image" src={booking.eventImage} alt={booking.eventTitle} loading="lazy" />
+                  ) : (
+                    <div className="ticket__image ticket__image--placeholder" aria-hidden="true" />
+                  )}
+
+                  <div className="ticket__main">
+                    <div className="ticket__top">
+                      <div className="ticket__title">{booking.eventTitle}</div>
+                      <div className={`ticket__status ticket__status--${booking.status}`}>
+                        {booking.status === 'active' ? 'Активен' : 'Отменен'}
+                      </div>
+                    </div>
+
+                    <div className="ticket__meta">{booking.venueName}</div>
+                    <div className="ticket__meta">{formatRange(booking.eventStart, booking.eventEnd)}</div>
+                    <div className="ticket__meta">Места: {safeSeats.length > 0 ? safeSeats.join(', ') : 'не указаны'}</div>
+
+                    <div className="ticket__footer">
+                      <div className="ticket__price">{moneyFormatter.format(booking.totalPrice)} {booking.currency}</div>
+                      {booking.status === 'active' && (
+                        <button className="modal__secondary" type="button" onClick={() => handleCancel(booking.id)}>
+                          Отменить
+                        </button>
+                      )}
                     </div>
                   </div>
-
-                  <div className="ticket__meta">{booking.venueName}</div>
-                  <div className="ticket__meta">{formatRange(booking.eventStart, booking.eventEnd)}</div>
-                  <div className="ticket__meta">Места: {booking.seats.join(', ')}</div>
-
-                  <div className="ticket__footer">
-                    <div className="ticket__price">{moneyFormatter.format(booking.totalPrice)} {booking.currency}</div>
-                    {booking.status === 'active' && (
-                      <button className="modal__secondary" type="button" onClick={() => handleCancel(booking.id)}>
-                        Отменить
-                      </button>
-                    )}
-                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </div>
