@@ -42,14 +42,32 @@ function AdminPanel({ events, venues, onSaved }: Props) {
   const [form, setForm] = useState<FormState>(emptyForm)
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const selectedEvent = useMemo(
     () => events.find((item) => item.id === selectedId) || null,
     [events, selectedId],
   )
+  const eventsByDate = useMemo(
+    () =>
+      [...events].sort(
+        (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime(),
+      ),
+    [events],
+  )
+  const venuesById = useMemo(
+    () =>
+      venues.reduce<Record<string, string>>((acc, venue) => {
+        acc[venue.id] = venue.name
+        return acc
+      }, {}),
+    [venues],
+  )
 
   const handleSelect = (id: string) => {
     setSelectedId(id)
+    setStatus('idle')
+    setError(null)
     if (!id) {
       setForm(emptyForm)
       return
@@ -73,8 +91,21 @@ function AdminPanel({ events, venues, onSaved }: Props) {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
+  const handleCreateNew = () => {
+    setSelectedId('')
+    setForm(emptyForm)
+    setStatus('idle')
+    setError(null)
+  }
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
+    if (!form.startAt || !form.endAt || !form.venueId) {
+      setStatus('error')
+      setError('Заполните дату, время и площадку.')
+      return
+    }
+
     setStatus('saving')
     setError(null)
 
@@ -93,6 +124,7 @@ function AdminPanel({ events, venues, onSaved }: Props) {
         await updateEvent(selectedEvent.id, payload)
       } else {
         await createEvent(payload)
+        setForm(emptyForm)
       }
       setStatus('success')
       onSaved()
@@ -103,26 +135,28 @@ function AdminPanel({ events, venues, onSaved }: Props) {
     }
   }
 
-  const handleDelete = async () => {
-    if (!selectedEvent) {
-      return
-    }
+  const handleDeleteById = async (eventId: string) => {
     const confirmed = window.confirm('Удалить событие?')
     if (!confirmed) {
       return
     }
-    setStatus('saving')
+
+    setDeletingId(eventId)
     setError(null)
     try {
-      await deleteEvent(selectedEvent.id)
-      setSelectedId('')
-      setForm(emptyForm)
+      await deleteEvent(eventId)
+      if (selectedId === eventId) {
+        setSelectedId('')
+        setForm(emptyForm)
+      }
       setStatus('success')
       onSaved()
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Не удалось удалить событие.'
       setError(message)
       setStatus('error')
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -130,23 +164,52 @@ function AdminPanel({ events, venues, onSaved }: Props) {
     <section className="admin">
       <div className="admin__header">
         <div>
-          <p className="admin__eyebrow">Админка</p>
+          <p className="admin__eyebrow">События</p>
           <h2 className="admin__title">Управление афишей</h2>
         </div>
-        <div className="admin__select">
-          <label htmlFor="eventSelect">Редактировать</label>
-          <select id="eventSelect" value={selectedId} onChange={(event) => handleSelect(event.target.value)}>
-            <option value="">Новое событие</option>
-            {events.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.title}
-              </option>
-            ))}
-          </select>
+        <div className="admin__actions">
+          <button className="admin__ghost" type="button" onClick={handleCreateNew}>
+            Новое событие
+          </button>
         </div>
       </div>
 
+      <div className="admin__list">
+        {eventsByDate.length === 0 && <div className="admin__note">Событий пока нет.</div>}
+        {eventsByDate.map((item) => {
+          const isSelected = selectedId === item.id
+          const isDeleting = deletingId === item.id
+          return (
+            <article className={`admin-item${isSelected ? ' admin-item--selected' : ''}`} key={item.id}>
+              <div className="admin-item__main">
+                <div className="admin-item__title">{item.title}</div>
+                <div className="admin-item__meta">
+                  {new Date(item.startAt).toLocaleString()} · {venuesById[item.venueId] || 'Площадка не найдена'} ·{' '}
+                  {item.published ? 'Опубликовано' : 'Черновик'}
+                </div>
+              </div>
+              <div className="admin-item__actions">
+                <button className="admin__secondary" type="button" onClick={() => handleSelect(item.id)}>
+                  Редактировать
+                </button>
+                <button
+                  className="admin__danger"
+                  type="button"
+                  onClick={() => handleDeleteById(item.id)}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? 'Удаление...' : 'Удалить'}
+                </button>
+              </div>
+            </article>
+          )
+        })}
+      </div>
+
       <form className="admin__form" onSubmit={handleSubmit}>
+        <h3 className="admin__form-title">
+          {selectedEvent ? `Редактирование: ${selectedEvent.title}` : 'Создание события'}
+        </h3>
         <label>
           Название
           <input type="text" value={form.title} onChange={(event) => handleChange('title', event.target.value)} required />
@@ -219,7 +282,7 @@ function AdminPanel({ events, venues, onSaved }: Props) {
           {status === 'saving' ? 'Сохранение...' : 'Сохранить'}
         </button>
         {selectedEvent && (
-          <button className="admin__danger" type="button" onClick={handleDelete}>
+          <button className="admin__danger" type="button" onClick={() => handleDeleteById(selectedEvent.id)}>
             Удалить событие
           </button>
         )}
@@ -229,3 +292,4 @@ function AdminPanel({ events, venues, onSaved }: Props) {
 }
 
 export default AdminPanel
+
