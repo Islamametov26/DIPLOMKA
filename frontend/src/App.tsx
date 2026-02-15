@@ -62,7 +62,7 @@ function App() {
   return (
     <div className="app">
       <header className="app__header">
-        <div className="app__brand">АФИША AIA</div>
+        <div className="app__brand">AFISHA AIA</div>
         <nav className="app__nav" aria-label="Primary" />
         <div className="app__actions">
           <div className="app__nav">
