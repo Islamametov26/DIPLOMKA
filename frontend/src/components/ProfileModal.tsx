@@ -27,6 +27,7 @@ function ProfileModal({ onClose }: Props) {
   const { user, logout } = useAuth()
   const [state, setState] = useState<LoadState>(emptyState)
   const [filter, setFilter] = useState<'all' | 'active' | 'history'>('all')
+  const safeItems = Array.isArray(state.items) ? state.items : []
 
   const loadBookings = async () => {
     setState((prev) => ({ ...prev, status: 'loading', error: null }))
@@ -44,22 +45,22 @@ function ProfileModal({ onClose }: Props) {
   }, [])
 
   const summary = useMemo(() => {
-    const items = state.items
+    const items = safeItems
     const active = items.filter((item) => item.status === 'active').length
     const history = items.filter((item) => item.status !== 'active').length
     const totalSpent = items.reduce((acc, item) => acc + item.totalPrice, 0)
     return { total: items.length, active, history, totalSpent }
-  }, [state.items])
+  }, [safeItems])
 
   const visibleItems = useMemo(() => {
     if (filter === 'active') {
-      return state.items.filter((item) => item.status === 'active')
+      return safeItems.filter((item) => item.status === 'active')
     }
     if (filter === 'history') {
-      return state.items.filter((item) => item.status !== 'active')
+      return safeItems.filter((item) => item.status !== 'active')
     }
-    return state.items
-  }, [filter, state.items])
+    return safeItems
+  }, [filter, safeItems])
 
   const handleCancel = async (id: string) => {
     try {

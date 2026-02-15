@@ -9,7 +9,7 @@ type CreateBookingResponse = Booking
 
 export async function listBookings() {
   const data = await request<BookingsResponse>('/api/bookings')
-  return data.items
+  return Array.isArray(data.items) ? data.items : []
 }
 
 export async function createBooking(eventId: string, seats: string[]) {
