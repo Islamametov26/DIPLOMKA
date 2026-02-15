@@ -58,8 +58,6 @@ function App() {
       navigate(path)
     }
 
-  const goToAdmin = () => navigate('/admin')
-
   return (
     <div className="app">
       <header className="app__header">
@@ -96,7 +94,7 @@ function App() {
         {isAdmin ? (
           <AdminPage onRequireAuth={() => setAuthOpen(true)} />
         ) : isVenues ? (
-          <VenuesPage onRequireAuth={() => setAuthOpen(true)} onAddEvent={goToAdmin} />
+          <VenuesPage />
         ) : (
           <EventsPage onRequireAuth={() => setAuthOpen(true)} />
         )}
