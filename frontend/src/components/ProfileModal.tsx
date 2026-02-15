@@ -48,7 +48,7 @@ function ProfileModal({ onClose }: Props) {
     const items = safeItems
     const active = items.filter((item) => item.status === 'active').length
     const history = items.filter((item) => item.status !== 'active').length
-    const totalSpent = items.reduce((acc, item) => acc + item.totalPrice, 0)
+    const totalSpent = items.reduce((acc, item) => (item.status === 'canceled' ? acc : acc + item.totalPrice), 0)
     return { total: items.length, active, history, totalSpent }
   }, [safeItems])
 
