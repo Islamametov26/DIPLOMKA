@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from 'react'
-import { deleteVenue, listVenues } from '../api/venues'
+import { listVenues } from '../api/venues'
 import { useAuth } from '../context/AuthContext'
 import type { Venue } from '../types/venue'
 
@@ -20,7 +20,6 @@ function VenuesPage({ onRequireAuth, onAddEvent }: Props) {
   const { user } = useAuth()
   const [state, setState] = useState<LoadState>(emptyState)
   const safeItems = Array.isArray(state.items) ? state.items : []
-  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -43,31 +42,6 @@ function VenuesPage({ onRequireAuth, onAddEvent }: Props) {
 
     return () => controller.abort()
   }, [])
-
-  const handleDeleteVenue = async (venueId: string) => {
-    if (!user) {
-      onRequireAuth()
-      return
-    }
-    const confirmed = window.confirm('Удалить площадку?')
-    if (!confirmed) {
-      return
-    }
-
-    setDeletingId(venueId)
-    try {
-      await deleteVenue(venueId)
-      setState((prev) => ({
-        ...prev,
-        items: prev.items.filter((item) => item.id !== venueId),
-      }))
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Не удалось удалить площадку.'
-      setState((prev) => ({ ...prev, error: message, status: 'error' }))
-    } finally {
-      setDeletingId(null)
-    }
-  }
 
   const handleAddEvent = () => {
     if (user) {
@@ -103,14 +77,6 @@ function VenuesPage({ onRequireAuth, onAddEvent }: Props) {
               <div className="venue-card__address">{venue.address}</div>
               <button className="venue-card__button" type="button" onClick={handleAddEvent}>
                 Добавить событие
-              </button>
-              <button
-                className="venue-card__danger"
-                type="button"
-                onClick={() => handleDeleteVenue(venue.id)}
-                disabled={deletingId === venue.id}
-              >
-                {deletingId === venue.id ? 'Удаление...' : 'Удалить площадку'}
               </button>
             </article>
           ))}
