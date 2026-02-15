@@ -11,8 +11,8 @@ type AuthContextValue = {
   user: User | null
   token: string | null
   status: 'idle' | 'loading' | 'ready'
-  login: (email: string, password: string) => Promise<void>
-  register: (email: string, password: string) => Promise<void>
+  login: (username: string, password: string) => Promise<void>
+  register: (username: string, password: string) => Promise<void>
   logout: () => void
   refreshProfile: () => Promise<void>
 }
@@ -58,14 +58,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshProfile()
   }, [refreshProfile])
 
-  const handleLogin = useCallback(async (email: string, password: string) => {
-    const response = await login(email, password)
+  const handleLogin = useCallback(async (username: string, password: string) => {
+    const response = await login(username, password)
     setToken(response.token)
     setState({ token: response.token, user: response.user })
   }, [setToken])
 
-  const handleRegister = useCallback(async (email: string, password: string) => {
-    const response = await register(email, password)
+  const handleRegister = useCallback(async (username: string, password: string) => {
+    const response = await register(username, password)
     setToken(response.token)
     setState({ token: response.token, user: response.user })
   }, [setToken])

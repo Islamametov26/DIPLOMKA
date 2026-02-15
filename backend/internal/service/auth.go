@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -20,14 +22,16 @@ type AuthService struct {
 	ttl       time.Duration
 }
 
+var usernamePattern = regexp.MustCompile(`^[\p{L}0-9_][\p{L}0-9_.-]{2,31}$`)
+
 func NewAuthService(users repository.UserRepository, secret string, ttl time.Duration) *AuthService {
 	return &AuthService{users: users, jwtSecret: []byte(secret), ttl: ttl}
 }
 
-func (s *AuthService) Register(ctx context.Context, email, password string) (domain.User, string, error) {
-	email = strings.TrimSpace(strings.ToLower(email))
-	if email == "" || password == "" {
-		return domain.User{}, "", repository.ErrConflict
+func (s *AuthService) Register(ctx context.Context, username, password string) (domain.User, string, error) {
+	username = normalizeUsername(username)
+	if username == "" || password == "" || !usernamePattern.MatchString(username) {
+		return domain.User{}, "", repository.ErrInvalid
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -35,7 +39,12 @@ func (s *AuthService) Register(ctx context.Context, email, password string) (dom
 		return domain.User{}, "", err
 	}
 
-	user := domain.User{Email: email, PasswordHash: string(hash)}
+	// Keep email for compatibility with existing schema and downstream consumers.
+	user := domain.User{
+		Username:     username,
+		Email:        fmt.Sprintf("%s@afisha.local", username),
+		PasswordHash: string(hash),
+	}
 	created, err := s.users.Create(ctx, user)
 	if err != nil {
 		return domain.User{}, "", err
@@ -49,13 +58,13 @@ func (s *AuthService) Register(ctx context.Context, email, password string) (dom
 	return created, token, nil
 }
 
-func (s *AuthService) Login(ctx context.Context, email, password string) (domain.User, string, error) {
-	email = strings.TrimSpace(strings.ToLower(email))
-	if email == "" || password == "" {
+func (s *AuthService) Login(ctx context.Context, username, password string) (domain.User, string, error) {
+	username = normalizeUsername(username)
+	if username == "" || password == "" {
 		return domain.User{}, "", repository.ErrUnauthorized
 	}
 
-	user, err := s.users.GetByEmail(ctx, email)
+	user, err := s.users.GetByUsername(ctx, username)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			return domain.User{}, "", repository.ErrUnauthorized
@@ -73,6 +82,10 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (domain
 	}
 
 	return user, token, nil
+}
+
+func normalizeUsername(value string) string {
+	return strings.TrimSpace(strings.ToLower(value))
 }
 
 func (s *AuthService) ParseToken(token string) (uuid.UUID, error) {

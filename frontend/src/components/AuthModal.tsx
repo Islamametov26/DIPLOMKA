@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 
 type Props = {
@@ -8,7 +8,7 @@ type Props = {
 function AuthModal({ onClose }: Props) {
   const { login, register } = useAuth()
   const [mode, setMode] = useState<'login' | 'register'>('login')
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [error, setError] = useState<string | null>(null)
@@ -19,9 +19,9 @@ function AuthModal({ onClose }: Props) {
     setError(null)
     try {
       if (mode === 'login') {
-        await login(email, password)
+        await login(username, password)
       } else {
-        await register(email, password)
+        await register(username, password)
       }
       onClose()
     } catch (err) {
@@ -38,9 +38,7 @@ function AuthModal({ onClose }: Props) {
         <div className="modal__header">
           <div>
             <p className="modal__eyebrow">Аккаунт</p>
-            <h2 className="modal__title">
-              {mode === 'login' ? 'Вход' : 'Регистрация'}
-            </h2>
+            <h2 className="modal__title">{mode === 'login' ? 'Вход' : 'Регистрация'}</h2>
           </div>
           <button className="modal__close" type="button" onClick={onClose}>
             Закрыть
@@ -66,13 +64,16 @@ function AuthModal({ onClose }: Props) {
 
         <form className="modal__form" onSubmit={handleSubmit}>
           <label className="modal__field">
-            Почта
+            Логин
             <input
               className="modal__input"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              type="text"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
               required
+              minLength={3}
+              maxLength={32}
+              autoComplete="username"
             />
           </label>
           <label className="modal__field">
@@ -84,6 +85,7 @@ function AuthModal({ onClose }: Props) {
               onChange={(event) => setPassword(event.target.value)}
               required
               minLength={6}
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
             />
           </label>
 

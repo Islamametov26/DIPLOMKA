@@ -30,7 +30,7 @@ type CategoryRepository interface {
 
 type UserRepository interface {
 	Create(ctx context.Context, user domain.User) (domain.User, error)
-	GetByEmail(ctx context.Context, email string) (domain.User, error)
+	GetByUsername(ctx context.Context, username string) (domain.User, error)
 	Get(ctx context.Context, id uuid.UUID) (domain.User, error)
 }
 

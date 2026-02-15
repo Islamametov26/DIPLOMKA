@@ -79,7 +79,7 @@ function ProfileModal({ onClose }: Props) {
         <div className="modal__header">
           <div>
             <p className="modal__eyebrow">Профиль</p>
-            <h2 className="modal__title">{user?.email}</h2>
+            <h2 className="modal__title">{user?.username}</h2>
           </div>
           <div className="modal__actions">
             <button className="modal__close" type="button" onClick={onClose}>

@@ -82,7 +82,7 @@ function App() {
           </div>
           {user ? (
             <button className="app__profile" type="button" onClick={() => setProfileOpen(true)}>
-              {user.email}
+              {user.username}
             </button>
           ) : (
             <button className="app__profile" type="button" onClick={() => setAuthOpen(true)}>

@@ -22,7 +22,7 @@ type authResponse struct {
 }
 
 type authRequest struct {
-	Email    string `json:"email"`
+	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
@@ -37,7 +37,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	user, token, err := h.service.Register(c.Request.Context(), payload.Email, payload.Password)
+	user, token, err := h.service.Register(c.Request.Context(), payload.Username, payload.Password)
 	if err != nil {
 		writeAuthError(c, err)
 		return
@@ -53,7 +53,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	user, token, err := h.service.Login(c.Request.Context(), payload.Email, payload.Password)
+	user, token, err := h.service.Login(c.Request.Context(), payload.Username, payload.Password)
 	if err != nil {
 		writeAuthError(c, err)
 		return
@@ -114,6 +114,8 @@ func writeAuthError(c *gin.Context, err error) {
 	switch {
 	case err == repository.ErrUnauthorized:
 		writeError(c, http.StatusUnauthorized, "unauthorized")
+	case err == repository.ErrInvalid:
+		writeError(c, http.StatusBadRequest, "invalid")
 	case err == repository.ErrConflict:
 		writeError(c, http.StatusConflict, "conflict")
 	case err == repository.ErrNotFound:
