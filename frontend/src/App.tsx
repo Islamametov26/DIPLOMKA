@@ -28,6 +28,7 @@ function App() {
 
   const [authOpen, setAuthOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [aboutOpen, setAboutOpen] = useState(false)
   const [route, setRoute] = useState(window.location.pathname)
   const isAdmin = route.startsWith('/admin')
   const isVenues = route.startsWith('/venues')
@@ -61,7 +62,7 @@ function App() {
   return (
     <div className="app">
       <header className="app__header">
-        <div className="app__brand">AFISHA</div>
+        <div className="app__brand">AFISHA AIA</div>
         <nav className="app__nav" aria-label="Primary" />
         <div className="app__actions">
           <div className="app__nav">
@@ -75,6 +76,9 @@ function App() {
             >
               Площадки
             </a>
+            <button className="app__link" type="button" onClick={() => setAboutOpen(true)}>
+              О нас
+            </button>
           </div>
           {user ? (
             <button className="app__profile" type="button" onClick={() => setProfileOpen(true)}>
@@ -99,6 +103,29 @@ function App() {
           <EventsPage onRequireAuth={() => setAuthOpen(true)} />
         )}
       </main>
+      {aboutOpen && (
+        <div className="about-drawer" role="dialog" aria-modal="true" aria-label="О нас и контакты">
+          <button className="about-drawer__overlay" type="button" onClick={() => setAboutOpen(false)} />
+          <aside className="about-drawer__panel">
+            <button className="about-drawer__close" type="button" onClick={() => setAboutOpen(false)}>
+              Закрыть
+            </button>
+            <p className="about-drawer__eyebrow">О НАС</p>
+            <h2 className="about-drawer__title">AFISHA AIA</h2>
+            <p className="about-drawer__text">
+              Я сделал этот сайт как удобную городскую афишу, чтобы быстро находить события и площадки в одном месте.
+              Основную логику и структуру я продумал сам, а ИИ помог ускорить часть реализации и улучшить интерфейс.
+            </p>
+            <p className="about-drawer__eyebrow">КОНТАКТЫ</p>
+            <div className="about-drawer__contacts">
+              <a href="tel:+77780089866">+7 778 008 98 66</a>
+              <a href="https://t.me/ametov180" target="_blank" rel="noreferrer">
+                Telegram: @ametov180
+              </a>
+            </div>
+          </aside>
+        </div>
+      )}
       {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
       {profileOpen && user && <ProfileModal onClose={() => setProfileOpen(false)} />}
     </div>
