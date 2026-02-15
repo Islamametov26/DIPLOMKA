@@ -77,15 +77,6 @@ function App() {
             >
               Площадки
             </a>
-            {user && (
-              <a
-                className={`app__link${isAdmin ? ' app__link--active' : ''}`}
-                href="/admin"
-                onClick={handleNavLink('/admin')}
-              >
-                Админка
-              </a>
-            )}
           </div>
           {user ? (
             <button className="app__profile" type="button" onClick={() => setProfileOpen(true)}>
