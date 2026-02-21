@@ -1,4 +1,4 @@
-export function cleanText(value: string | null | undefined, fallback = '—'): string {
+﻿export function cleanText(value: string | null | undefined, fallback = '—'): string {
   const text = typeof value === 'string' ? value.trim() : ''
   if (!text) {
     return fallback
