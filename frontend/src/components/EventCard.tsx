@@ -1,4 +1,5 @@
 ﻿import type { Event } from '../types/event'
+import { cleanText } from '../utils/text'
 
 const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
   day: '2-digit',
@@ -20,10 +21,14 @@ type Props = {
 }
 
 function EventCard({ event, venueName, onDetails }: Props) {
+  const safeTitle = cleanText(event.title, 'Событие')
+  const safeDescription = cleanText(event.description, 'Описание скоро появится.')
+  const safeVenue = cleanText(venueName, 'Неизвестно')
+
   return (
     <article className="event-card">
       {event.imageUrl ? (
-        <img className="event-card__image" src={event.imageUrl} alt={event.title} loading="lazy" />
+        <img className="event-card__image" src={event.imageUrl} alt={safeTitle} loading="lazy" />
       ) : (
         <div className="event-card__image event-card__image--placeholder" aria-hidden="true" />
       )}
@@ -31,10 +36,10 @@ function EventCard({ event, venueName, onDetails }: Props) {
         <span className="event-card__tag">{event.published ? 'Опубликовано' : 'Черновик'}</span>
         <span className="event-card__time">{formatRange(event)}</span>
       </div>
-      <h3 className="event-card__title">{event.title}</h3>
-      <p className="event-card__description">{event.description}</p>
+      <h3 className="event-card__title">{safeTitle}</h3>
+      <p className="event-card__description">{safeDescription}</p>
       <div className="event-card__footer">
-        <span className="event-card__meta">Площадка: {venueName || 'Неизвестно'}</span>
+        <span className="event-card__meta">Площадка: {safeVenue}</span>
         <button className="event-card__button" type="button" onClick={() => onDetails(event)}>
           Подробнее
         </button>
