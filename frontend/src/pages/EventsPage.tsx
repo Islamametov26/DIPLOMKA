@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { listCategories } from '../api/categories'
 import { listEvents } from '../api/events'
 import { listVenues } from '../api/venues'
@@ -59,9 +59,7 @@ function EventsPage() {
       if (!normalizedQuery) {
         return safeItems
       }
-      return safeItems.filter((event) =>
-        `${event.title} ${event.description}`.toLowerCase().includes(normalizedQuery),
-      )
+      return safeItems.filter((event) => `${event.title} ${event.description}`.toLowerCase().includes(normalizedQuery))
     }
     return safeItems.filter((event) => {
       if (event.categoryId !== selectedCategoryId) {
@@ -82,6 +80,7 @@ function EventsPage() {
       }, {}),
     [safeVenues],
   )
+
   const categoryById = useMemo(
     () =>
       safeCategories.reduce<Record<string, string>>((acc, category) => {
@@ -97,8 +96,8 @@ function EventsPage() {
         <p className="events__eyebrow">Городской портал</p>
         <h1 className="events__title">Афиша мероприятий</h1>
         <p className="events__subtitle">
-          События города на ближайшие недели: выставки, лекции, концерты и спектакли. Выбирайте
-          формат и планируйте вечер заранее.
+          События города на ближайшие недели: выставки, лекции, концерты и спектакли. Выбирайте формат и планируйте
+          вечер заранее.
         </p>
       </div>
 
@@ -112,6 +111,7 @@ function EventsPage() {
             onChange={(event) => setQuery(event.target.value)}
           />
         </div>
+
         {safeCategories.length > 0 && (
           <div className="events__filters">
             <button
@@ -133,14 +133,14 @@ function EventsPage() {
             ))}
           </div>
         )}
+
         <div className="events__panel-title">Ближайшие события</div>
-        {(state.status === 'idle' || state.status === 'loading') && (
-          <div className="events__status">Загружаем афишу...</div>
-        )}
+        {(state.status === 'idle' || state.status === 'loading') && <div className="events__status">Загружаем афишу...</div>}
         {state.status === 'error' && <div className="events__status events__status--error">{state.error}</div>}
         {state.status === 'success' && filteredItems.length === 0 && (
           <div className="events__status">Событий в выбранной категории пока нет.</div>
         )}
+
         <div className="events__grid">
           {filteredItems.map((event) => (
             <EventCard

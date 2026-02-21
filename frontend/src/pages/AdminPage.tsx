@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { listCategories } from '../api/categories'
 import { listEvents } from '../api/events'
 import { listVenues } from '../api/venues'
@@ -40,8 +40,7 @@ function AdminPage({ onRequireAuth }: Props) {
       setVenues(venueItems)
       setCategories(categoryItems)
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ Р°С„РёС€Сѓ.'
+      const message = error instanceof Error ? error.message : 'Не удалось загрузить афишу.'
       setState({ status: 'error', items: [], error: message })
     }
   }
@@ -66,28 +65,22 @@ function AdminPage({ onRequireAuth }: Props) {
       <section className="admin">
         <div className="admin__header">
           <div>
-            <p className="admin__eyebrow">РђРґРјРёРЅРєР°</p>
-            <h2 className="admin__title">РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ</h2>
+            <p className="admin__eyebrow">Админка</p>
+            <h2 className="admin__title">Требуется авторизация</h2>
           </div>
           <button className="admin__primary" type="button" onClick={onRequireAuth}>
-            Р’РѕР№С‚Рё
+            Войти
           </button>
         </div>
-        <p className="admin__note">
-          Р”Р»СЏ СѓРїСЂР°РІР»РµРЅРёСЏ Р°С„РёС€РµР№ РІРѕР№РґРёС‚Рµ РІ Р°РєРєР°СѓРЅС‚ Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР°.
-        </p>
+        <p className="admin__note">Для управления афишей войдите в аккаунт администратора.</p>
       </section>
     )
   }
 
   return (
     <section className="admin">
-      {state.status === 'error' && (
-        <div className="admin__status admin__status--error">{state.error}</div>
-      )}
-      {(state.status === 'idle' || state.status === 'loading') && (
-        <div className="admin__status">Р—Р°РіСЂСѓР·РєР°...</div>
-      )}
+      {state.status === 'error' && <div className="admin__status admin__status--error">{state.error}</div>}
+      {(state.status === 'idle' || state.status === 'loading') && <div className="admin__status">Загрузка...</div>}
       {state.status === 'ready' && (
         <div className="admin__stack">
           <AdminPanel events={safeEvents} venues={safeVenues} categories={safeCategories} onSaved={load} />
