@@ -46,12 +46,3 @@ export async function deleteEvent(id: string) {
     method: 'DELETE',
   })
 }
-
-type SeatsResponse = {
-  items: string[]
-}
-
-export async function listOccupiedSeats(eventId: string) {
-  const data = await request<SeatsResponse>(`/api/events/${eventId}/occupied-seats`)
-  return data.items
-}

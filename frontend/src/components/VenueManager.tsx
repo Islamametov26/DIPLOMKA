@@ -1,5 +1,5 @@
-п»їimport { useMemo, useState } from 'react'
-import { createVenue, deleteVenue, updateVenue } from '../api/venues'
+import { useMemo, useState } from 'react'
+import { createVenue, updateVenue } from '../api/venues'
 import type { Venue } from '../types/venue'
 
 type Props = {
@@ -19,7 +19,6 @@ function VenueManager({ venues, onSaved }: Props) {
   const [form, setForm] = useState(emptyVenue)
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const selectedVenue = useMemo(
     () => venues.find((item) => item.id === selectedId) || null,
@@ -68,34 +67,9 @@ function VenueManager({ venues, onSaved }: Props) {
       setStatus('success')
       onSaved()
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ РїР»РѕС‰Р°РґРєСѓ.'
+      const message = err instanceof Error ? err.message : 'Не удалось сохранить площадку.'
       setError(message)
       setStatus('error')
-    }
-  }
-
-  const handleDeleteById = async (venueId: string) => {
-    const confirmed = window.confirm('РЈРґР°Р»РёС‚СЊ РїР»РѕС‰Р°РґРєСѓ? Р­С‚Рѕ С‚Р°РєР¶Рµ СѓРґР°Р»РёС‚ СЃРІСЏР·Р°РЅРЅС‹Рµ СЃРѕР±С‹С‚РёСЏ.')
-    if (!confirmed) {
-      return
-    }
-
-    setDeletingId(venueId)
-    setError(null)
-    try {
-      await deleteVenue(venueId)
-      if (selectedId === venueId) {
-        setSelectedId('')
-        setForm(emptyVenue)
-      }
-      setStatus('success')
-      onSaved()
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'РќРµ СѓРґР°Р»РѕСЃСЊ СѓРґР°Р»РёС‚СЊ РїР»РѕС‰Р°РґРєСѓ.'
-      setError(message)
-      setStatus('error')
-    } finally {
-      setDeletingId(null)
     }
   }
 
@@ -103,21 +77,22 @@ function VenueManager({ venues, onSaved }: Props) {
     <section className="admin">
       <div className="admin__header">
         <div>
-          <p className="admin__eyebrow">РџР»РѕС‰Р°РґРєРё</p>
-          <h2 className="admin__title">РЈРїСЂР°РІР»РµРЅРёРµ РїР»РѕС‰Р°РґРєР°РјРё</h2>
+          <p className="admin__eyebrow">Площадки</p>
+          <h2 className="admin__title">Редактирование площадок</h2>
         </div>
         <div className="admin__actions">
           <button className="admin__ghost" type="button" onClick={handleCreateNew}>
-            РќРѕРІР°СЏ РїР»РѕС‰Р°РґРєР°
+            Новая площадка
           </button>
         </div>
       </div>
 
+      <div className="admin__note">Удаление площадок отключено. Изменяйте название и адрес существующих площадок.</div>
+
       <div className="admin__list">
-        {venues.length === 0 && <div className="admin__note">РџР»РѕС‰Р°РґРѕРє РїРѕРєР° РЅРµС‚.</div>}
+        {venues.length === 0 && <div className="admin__note">Площадок пока нет.</div>}
         {venues.map((venue) => {
           const isSelected = selectedId === venue.id
-          const isDeleting = deletingId === venue.id
           return (
             <article className={`admin-item${isSelected ? ' admin-item--selected' : ''}`} key={venue.id}>
               <div className="admin-item__main">
@@ -126,15 +101,7 @@ function VenueManager({ venues, onSaved }: Props) {
               </div>
               <div className="admin-item__actions">
                 <button className="admin__secondary" type="button" onClick={() => handleSelect(venue.id)}>
-                  Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ
-                </button>
-                <button
-                  className="admin__danger"
-                  type="button"
-                  onClick={() => handleDeleteById(venue.id)}
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? 'РЈРґР°Р»РµРЅРёРµ...' : 'РЈРґР°Р»РёС‚СЊ'}
+                  Редактировать
                 </button>
               </div>
             </article>
@@ -144,10 +111,10 @@ function VenueManager({ venues, onSaved }: Props) {
 
       <form className="admin__form" onSubmit={handleSubmit}>
         <h3 className="admin__form-title">
-          {selectedVenue ? `Р РµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ: ${selectedVenue.name}` : 'РЎРѕР·РґР°РЅРёРµ РїР»РѕС‰Р°РґРєРё'}
+          {selectedVenue ? `Редактирование: ${selectedVenue.name}` : 'Создание площадки'}
         </h3>
         <label>
-          РќР°Р·РІР°РЅРёРµ
+          Название
           <input
             type="text"
             value={form.name}
@@ -156,7 +123,7 @@ function VenueManager({ venues, onSaved }: Props) {
           />
         </label>
         <label>
-          РђРґСЂРµСЃ
+          Адрес
           <input
             type="text"
             value={form.address}
@@ -165,19 +132,13 @@ function VenueManager({ venues, onSaved }: Props) {
           />
         </label>
         {error && <div className="admin__status admin__status--error">{error}</div>}
-        {status === 'success' && <div className="admin__status">РЎРѕС…СЂР°РЅРµРЅРѕ.</div>}
+        {status === 'success' && <div className="admin__status">Сохранено.</div>}
         <button className="admin__primary" type="submit" disabled={status === 'saving'}>
-          {status === 'saving' ? 'РЎРѕС…СЂР°РЅРµРЅРёРµ...' : 'РЎРѕС…СЂР°РЅРёС‚СЊ'}
+          {status === 'saving' ? 'Сохранение...' : 'Сохранить'}
         </button>
-        {selectedVenue && (
-          <button className="admin__danger" type="button" onClick={() => handleDeleteById(selectedVenue.id)}>
-            РЈРґР°Р»РёС‚СЊ РїР»РѕС‰Р°РґРєСѓ
-          </button>
-        )}
       </form>
     </section>
   )
 }
 
 export default VenueManager
-

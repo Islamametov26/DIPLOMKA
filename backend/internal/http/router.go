@@ -13,7 +13,6 @@ func NewRouter(
 	venueService *service.VenueService,
 	categoryService *service.CategoryService,
 	authService *service.AuthService,
-	bookingService *service.BookingService,
 ) http.Handler {
 	router := gin.New()
 	router.Use(
@@ -26,7 +25,6 @@ func NewRouter(
 	venueHandler := NewVenueHandler(venueService)
 	categoryHandler := NewCategoryHandler(categoryService)
 	authHandler := NewAuthHandler(authService)
-	bookingHandler := NewBookingHandler(bookingService)
 
 	router.GET("/health", healthHandler)
 
@@ -34,7 +32,6 @@ func NewRouter(
 	{
 		api.GET("/events", eventHandler.List)
 		api.GET("/events/:id", eventHandler.Get)
-		api.GET("/events/:id/occupied-seats", bookingHandler.Seats)
 		api.GET("/venues", venueHandler.List)
 		api.GET("/venues/:id", venueHandler.Get)
 		api.POST("/venues", authMiddleware(authService), venueHandler.Create)
@@ -52,12 +49,6 @@ func NewRouter(
 		api.PUT("/events/:id", authMiddleware(authService), eventHandler.Update)
 		api.DELETE("/events/:id", authMiddleware(authService), eventHandler.Delete)
 
-		bookings := api.Group("/bookings", authMiddleware(authService))
-		{
-			bookings.GET("", bookingHandler.List)
-			bookings.POST("", bookingHandler.Create)
-			bookings.DELETE("/:id", bookingHandler.Cancel)
-		}
 	}
 
 	return router

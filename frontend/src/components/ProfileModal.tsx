@@ -1,76 +1,11 @@
-п»їimport { useEffect, useMemo, useState } from 'react'
-import { cancelBooking, listBookings } from '../api/bookings'
 import { useAuth } from '../context/AuthContext'
-import type { Booking } from '../types/booking'
 
 type Props = {
   onClose: () => void
 }
 
-type LoadState = {
-  status: 'idle' | 'loading' | 'ready' | 'error'
-  items: Booking[]
-  error: string | null
-}
-
-const emptyState: LoadState = { status: 'loading', items: [], error: null }
-
-const moneyFormatter = new Intl.NumberFormat('ru-RU')
-
-function formatRange(start: string, end: string) {
-  const startDate = new Date(start)
-  const endDate = new Date(end)
-  return `${startDate.toLocaleString('ru-RU')} - ${endDate.toLocaleString('ru-RU')}`
-}
-
 function ProfileModal({ onClose }: Props) {
   const { user, logout } = useAuth()
-  const [state, setState] = useState<LoadState>(emptyState)
-  const [filter, setFilter] = useState<'all' | 'active' | 'history'>('all')
-  const safeItems = Array.isArray(state.items) ? state.items : []
-
-  const loadBookings = async () => {
-    setState((prev) => ({ ...prev, status: 'loading', error: null }))
-    try {
-      const items = await listBookings()
-      setState({ status: 'ready', items, error: null })
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ Р±РёР»РµС‚С‹.'
-      setState({ status: 'error', items: [], error: message })
-    }
-  }
-
-  useEffect(() => {
-    loadBookings()
-  }, [])
-
-  const summary = useMemo(() => {
-    const items = safeItems
-    const active = items.filter((item) => item.status === 'active').length
-    const history = items.filter((item) => item.status !== 'active').length
-    const totalSpent = items.reduce((acc, item) => (item.status === 'canceled' ? acc : acc + item.totalPrice), 0)
-    return { total: items.length, active, history, totalSpent }
-  }, [safeItems])
-
-  const visibleItems = useMemo(() => {
-    if (filter === 'active') {
-      return safeItems.filter((item) => item.status === 'active')
-    }
-    if (filter === 'history') {
-      return safeItems.filter((item) => item.status !== 'active')
-    }
-    return safeItems
-  }, [filter, safeItems])
-
-  const handleCancel = async (id: string) => {
-    try {
-      await cancelBooking(id)
-      await loadBookings()
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‚РјРµРЅРёС‚СЊ Р±СЂРѕРЅСЊ.'
-      setState((prev) => ({ ...prev, error: message, status: 'error' }))
-    }
-  }
 
   return (
     <div className="modal" role="dialog" aria-modal="true">
@@ -78,108 +13,27 @@ function ProfileModal({ onClose }: Props) {
       <div className="modal__content" role="document">
         <div className="modal__header">
           <div>
-            <p className="modal__eyebrow">РџСЂРѕС„РёР»СЊ</p>
+            <p className="modal__eyebrow">Профиль</p>
             <h2 className="modal__title">{user?.username}</h2>
           </div>
           <div className="modal__actions">
             <button className="modal__close" type="button" onClick={onClose}>
-              Р—Р°РєСЂС‹С‚СЊ
+              Закрыть
             </button>
             <button className="modal__secondary" type="button" onClick={logout}>
-              Р’С‹Р№С‚Рё
+              Выйти
             </button>
           </div>
-        </div>
-
-        <div className="profile-summary">
-          <div className="profile-summary__item">
-            <div className="profile-summary__label">Р’СЃРµРіРѕ Р±РёР»РµС‚РѕРІ</div>
-            <div className="profile-summary__value">{summary.total}</div>
-          </div>
-          <div className="profile-summary__item">
-            <div className="profile-summary__label">РђРєС‚РёРІРЅС‹Рµ</div>
-            <div className="profile-summary__value">{summary.active}</div>
-          </div>
-          <div className="profile-summary__item">
-            <div className="profile-summary__label">РСЃС‚РѕСЂРёСЏ</div>
-            <div className="profile-summary__value">{summary.history}</div>
-          </div>
-          <div className="profile-summary__item">
-            <div className="profile-summary__label">РџРѕС‚СЂР°С‡РµРЅРѕ</div>
-            <div className="profile-summary__value">{moneyFormatter.format(summary.totalSpent)} KZT</div>
-          </div>
-        </div>
-
-        <div className="modal__tabs">
-          <button
-            className={`modal__tab${filter === 'all' ? ' modal__tab--active' : ''}`}
-            type="button"
-            onClick={() => setFilter('all')}
-          >
-            Р’СЃРµ
-          </button>
-          <button
-            className={`modal__tab${filter === 'active' ? ' modal__tab--active' : ''}`}
-            type="button"
-            onClick={() => setFilter('active')}
-          >
-            РђРєС‚РёРІРЅС‹Рµ
-          </button>
-          <button
-            className={`modal__tab${filter === 'history' ? ' modal__tab--active' : ''}`}
-            type="button"
-            onClick={() => setFilter('history')}
-          >
-            РСЃС‚РѕСЂРёСЏ
-          </button>
         </div>
 
         <div className="modal__section">
-          <h3 className="modal__section-title">РњРѕРё Р±РёР»РµС‚С‹</h3>
-          {(state.status === 'idle' || state.status === 'loading') && (
-            <div className="modal__status">Р—Р°РіСЂСѓР·РєР°...</div>
-          )}
-          {state.error && <div className="modal__status modal__status--error">{state.error}</div>}
-          {state.status === 'ready' && visibleItems.length === 0 && (
-            <div className="modal__status">Р‘РёР»РµС‚РѕРІ РїРѕРєР° РЅРµС‚.</div>
-          )}
-
-          <div className="modal__list">
-            {visibleItems.map((booking) => {
-              const safeSeats = Array.isArray(booking.seats) ? booking.seats : []
-
-              return (
-                <div className="ticket" key={booking.id}>
-                  {booking.eventImage ? (
-                    <img className="ticket__image" src={booking.eventImage} alt={booking.eventTitle} loading="lazy" />
-                  ) : (
-                    <div className="ticket__image ticket__image--placeholder" aria-hidden="true" />
-                  )}
-
-                  <div className="ticket__main">
-                    <div className="ticket__top">
-                      <div className="ticket__title">{booking.eventTitle}</div>
-                      <div className={`ticket__status ticket__status--${booking.status}`}>
-                        {booking.status === 'active' ? 'РђРєС‚РёРІРµРЅ' : 'РћС‚РјРµРЅРµРЅ'}
-                      </div>
-                    </div>
-
-                    <div className="ticket__meta">{booking.venueName}</div>
-                    <div className="ticket__meta">{formatRange(booking.eventStart, booking.eventEnd)}</div>
-                    <div className="ticket__meta">РњРµСЃС‚Р°: {safeSeats.length > 0 ? safeSeats.join(', ') : 'РЅРµ СѓРєР°Р·Р°РЅС‹'}</div>
-
-                    <div className="ticket__footer">
-                      <div className="ticket__price">{moneyFormatter.format(booking.totalPrice)} {booking.currency}</div>
-                      {booking.status === 'active' && (
-                        <button className="modal__secondary" type="button" onClick={() => handleCancel(booking.id)}>
-                          РћС‚РјРµРЅРёС‚СЊ
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
+          <h3 className="modal__section-title">Аккаунт</h3>
+          <p className="modal__description">
+            Сайт работает в формате информационной афиши: здесь можно смотреть события, площадки и расписание.
+          </p>
+          <div className="modal__meta">
+            <span>Логин: {user?.username}</span>
+            <span>Email (системный): {user?.email}</span>
           </div>
         </div>
       </div>

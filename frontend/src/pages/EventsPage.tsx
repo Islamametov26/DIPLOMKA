@@ -18,11 +18,7 @@ const emptyState = {
 
 type EventsState = typeof emptyState
 
-type Props = {
-  onRequireAuth: () => void
-}
-
-function EventsPage({ onRequireAuth }: Props) {
+function EventsPage() {
   const [state, setState] = useState<EventsState>(emptyState)
   const [activeEvent, setActiveEvent] = useState<Event | null>(null)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all')
@@ -80,11 +76,19 @@ function EventsPage({ onRequireAuth }: Props) {
 
   const venueById = useMemo(
     () =>
-      safeVenues.reduce<Record<string, string>>((acc, venue) => {
-        acc[venue.id] = venue.name
+      safeVenues.reduce<Record<string, Venue>>((acc, venue) => {
+        acc[venue.id] = venue
         return acc
       }, {}),
     [safeVenues],
+  )
+  const categoryById = useMemo(
+    () =>
+      safeCategories.reduce<Record<string, string>>((acc, category) => {
+        acc[category.id] = category.name
+        return acc
+      }, {}),
+    [safeCategories],
   )
 
   return (
@@ -142,7 +146,7 @@ function EventsPage({ onRequireAuth }: Props) {
             <EventCard
               key={event.id}
               event={event}
-              venueName={venueById[event.venueId]}
+              venueName={venueById[event.venueId]?.name}
               onDetails={(selected) => setActiveEvent(selected)}
             />
           ))}
@@ -152,8 +156,10 @@ function EventsPage({ onRequireAuth }: Props) {
       {activeEvent && (
         <EventDetailsModal
           event={activeEvent}
+          venueName={venueById[activeEvent.venueId]?.name || 'Неизвестно'}
+          venueAddress={venueById[activeEvent.venueId]?.address || 'Адрес не указан'}
+          categoryName={categoryById[activeEvent.categoryId] || 'Без категории'}
           onClose={() => setActiveEvent(null)}
-          onRequireAuth={onRequireAuth}
         />
       )}
     </section>
