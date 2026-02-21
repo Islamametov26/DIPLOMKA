@@ -1,4 +1,4 @@
-﻿-- Fix mojibake texts introduced by previous seed migrations.
+-- Fix mojibake texts introduced by previous seed migrations.
 -- Safe for repeated runs and partially modified data.
 
 UPDATE venues

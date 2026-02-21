@@ -51,7 +51,8 @@ func ApplyMigrations(ctx context.Context, db *sql.DB, dir string, logger *zap.Lo
 			return fmt.Errorf("read migration %s: %w", name, err)
 		}
 
-		if _, err := db.ExecContext(ctx, string(contents)); err != nil {
+		query := strings.TrimPrefix(string(contents), "\uFEFF")
+		if _, err := db.ExecContext(ctx, query); err != nil {
 			return fmt.Errorf("apply migration %s: %w", name, err)
 		}
 
