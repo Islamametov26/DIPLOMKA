@@ -74,6 +74,48 @@ const getEventQueryLegacy = `
 	WHERE e.id = $1
 `
 
+const createEventQueryWithMedia = `
+	INSERT INTO events (title, description, image_url, trailer_url, gallery_urls, start_at, end_at, venue_id, published, created_by)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	RETURNING id, title, description, image_url, trailer_url, gallery_urls, start_at, end_at, venue_id, published, created_by, created_at, updated_at
+`
+
+const createEventQueryLegacy = `
+	INSERT INTO events (title, description, image_url, start_at, end_at, venue_id, published, created_by)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	RETURNING id, title, description, image_url, start_at, end_at, venue_id, published, created_by, created_at, updated_at
+`
+
+const updateEventQueryWithMedia = `
+	UPDATE events
+	SET title = $1,
+	    description = $2,
+	    image_url = $3,
+	    trailer_url = $4,
+	    gallery_urls = $5,
+	    start_at = $6,
+	    end_at = $7,
+	    venue_id = $8,
+	    published = $9,
+	    updated_at = now()
+	WHERE id = $10
+	RETURNING id, title, description, image_url, trailer_url, gallery_urls, start_at, end_at, venue_id, published, created_by, created_at, updated_at
+`
+
+const updateEventQueryLegacy = `
+	UPDATE events
+	SET title = $1,
+	    description = $2,
+	    image_url = $3,
+	    start_at = $4,
+	    end_at = $5,
+	    venue_id = $6,
+	    published = $7,
+	    updated_at = now()
+	WHERE id = $8
+	RETURNING id, title, description, image_url, start_at, end_at, venue_id, published, created_by, created_at, updated_at
+`
+
 func NewEventRepository(db *sql.DB) *EventRepository {
 	return &EventRepository{db: db}
 }
@@ -200,13 +242,21 @@ func (r *EventRepository) Create(ctx context.Context, event domain.Event) (domai
 		_ = tx.Rollback()
 	}()
 
-	row := tx.QueryRowContext(ctx, `
-		INSERT INTO events (title, description, image_url, trailer_url, gallery_urls, start_at, end_at, venue_id, published, created_by)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, title, description, image_url, trailer_url, gallery_urls, start_at, end_at, venue_id, published, created_by, created_at, updated_at
-	`, event.Title, event.Description, event.ImageURL, event.TrailerURL, event.GalleryURLs, event.StartAt, event.EndAt, event.VenueID, event.Published, event.CreatedBy)
-
-	if err := row.Scan(
+	row := tx.QueryRowContext(
+		ctx,
+		createEventQueryWithMedia,
+		event.Title,
+		event.Description,
+		event.ImageURL,
+		event.TrailerURL,
+		event.GalleryURLs,
+		event.StartAt,
+		event.EndAt,
+		event.VenueID,
+		event.Published,
+		event.CreatedBy,
+	)
+	scanErr := row.Scan(
 		&event.ID,
 		&event.Title,
 		&event.Description,
@@ -220,11 +270,41 @@ func (r *EventRepository) Create(ctx context.Context, event domain.Event) (domai
 		&event.CreatedBy,
 		&event.CreatedAt,
 		&event.UpdatedAt,
-	); err != nil {
-		if isForeignKeyViolation(err) {
+	)
+	if scanErr != nil && isUndefinedColumn(scanErr) {
+		legacyRow := tx.QueryRowContext(
+			ctx,
+			createEventQueryLegacy,
+			event.Title,
+			event.Description,
+			event.ImageURL,
+			event.StartAt,
+			event.EndAt,
+			event.VenueID,
+			event.Published,
+			event.CreatedBy,
+		)
+		scanErr = legacyRow.Scan(
+			&event.ID,
+			&event.Title,
+			&event.Description,
+			&event.ImageURL,
+			&event.StartAt,
+			&event.EndAt,
+			&event.VenueID,
+			&event.Published,
+			&event.CreatedBy,
+			&event.CreatedAt,
+			&event.UpdatedAt,
+		)
+		event.TrailerURL = ""
+		event.GalleryURLs = nil
+	}
+	if scanErr != nil {
+		if isForeignKeyViolation(scanErr) {
 			return domain.Event{}, repository.ErrInvalid
 		}
-		return domain.Event{}, err
+		return domain.Event{}, scanErr
 	}
 
 	if _, err := tx.ExecContext(ctx, `
@@ -252,23 +332,21 @@ func (r *EventRepository) Update(ctx context.Context, event domain.Event) (domai
 		_ = tx.Rollback()
 	}()
 
-	row := tx.QueryRowContext(ctx, `
-		UPDATE events
-		SET title = $1,
-		    description = $2,
-		    image_url = $3,
-		    trailer_url = $4,
-		    gallery_urls = $5,
-		    start_at = $6,
-		    end_at = $7,
-		    venue_id = $8,
-		    published = $9,
-		    updated_at = now()
-		WHERE id = $10
-		RETURNING id, title, description, image_url, trailer_url, gallery_urls, start_at, end_at, venue_id, published, created_by, created_at, updated_at
-	`, event.Title, event.Description, event.ImageURL, event.TrailerURL, event.GalleryURLs, event.StartAt, event.EndAt, event.VenueID, event.Published, event.ID)
-
-	if err := row.Scan(
+	row := tx.QueryRowContext(
+		ctx,
+		updateEventQueryWithMedia,
+		event.Title,
+		event.Description,
+		event.ImageURL,
+		event.TrailerURL,
+		event.GalleryURLs,
+		event.StartAt,
+		event.EndAt,
+		event.VenueID,
+		event.Published,
+		event.ID,
+	)
+	scanErr := row.Scan(
 		&event.ID,
 		&event.Title,
 		&event.Description,
@@ -282,14 +360,44 @@ func (r *EventRepository) Update(ctx context.Context, event domain.Event) (domai
 		&event.CreatedBy,
 		&event.CreatedAt,
 		&event.UpdatedAt,
-	); err != nil {
-		if isForeignKeyViolation(err) {
+	)
+	if scanErr != nil && isUndefinedColumn(scanErr) {
+		legacyRow := tx.QueryRowContext(
+			ctx,
+			updateEventQueryLegacy,
+			event.Title,
+			event.Description,
+			event.ImageURL,
+			event.StartAt,
+			event.EndAt,
+			event.VenueID,
+			event.Published,
+			event.ID,
+		)
+		scanErr = legacyRow.Scan(
+			&event.ID,
+			&event.Title,
+			&event.Description,
+			&event.ImageURL,
+			&event.StartAt,
+			&event.EndAt,
+			&event.VenueID,
+			&event.Published,
+			&event.CreatedBy,
+			&event.CreatedAt,
+			&event.UpdatedAt,
+		)
+		event.TrailerURL = ""
+		event.GalleryURLs = nil
+	}
+	if scanErr != nil {
+		if isForeignKeyViolation(scanErr) {
 			return domain.Event{}, repository.ErrInvalid
 		}
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(scanErr, sql.ErrNoRows) {
 			return domain.Event{}, repository.ErrNotFound
 		}
-		return domain.Event{}, err
+		return domain.Event{}, scanErr
 	}
 
 	if _, err := tx.ExecContext(ctx, `DELETE FROM event_categories WHERE event_id = $1`, event.ID); err != nil {
