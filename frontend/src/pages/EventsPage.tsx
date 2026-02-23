@@ -347,6 +347,22 @@ function EventsPage({ onRequireAuth }: Props) {
                 )}
                 <div className="events__popular-meta">{new Date(event.startAt).toLocaleString('ru-RU')}</div>
                 <h3 className="events__popular-name">{event.title}</h3>
+                <p className="events__popular-description">{event.description}</p>
+                <div className="events__popular-footer">
+                  <span className="events__popular-venue">Площадка: {venueById[event.venueId]?.name || 'Неизвестно'}</span>
+                </div>
+                <div className="events__popular-actions-wrap">
+                  <button
+                    className="events__popular-hover-action"
+                    type="button"
+                    onClick={(clickEvent) => {
+                      clickEvent.stopPropagation()
+                      setActiveEvent(event)
+                    }}
+                  >
+                    Купить билет
+                  </button>
+                </div>
               </article>
             ))}
           </div>
