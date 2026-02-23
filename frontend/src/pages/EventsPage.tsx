@@ -3,7 +3,6 @@ import { listCategories } from '../api/categories'
 import { listEvents } from '../api/events'
 import { listVenues } from '../api/venues'
 import EventCard from '../components/EventCard'
-import EventDetailsModal from '../components/EventDetailsModal'
 import type { Category } from '../types/category'
 import type { Event } from '../types/event'
 import type { Venue } from '../types/venue'
@@ -19,7 +18,7 @@ const emptyState = {
 type EventsState = typeof emptyState
 
 type Props = {
-  onRequireAuth: () => void
+  onOpenEvent: (eventId: string) => void
 }
 
 type CalendarDay = {
@@ -68,9 +67,8 @@ function toHumanDate(key: string) {
   })
 }
 
-function EventsPage({ onRequireAuth }: Props) {
+function EventsPage({ onOpenEvent }: Props) {
   const [state, setState] = useState<EventsState>(emptyState)
-  const [activeEvent, setActiveEvent] = useState<Event | null>(null)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all')
   const [selectedDateKey, setSelectedDateKey] = useState<string>('')
   const [dayWindowStart, setDayWindowStart] = useState<number>(0)
@@ -251,15 +249,6 @@ function EventsPage({ onRequireAuth }: Props) {
     [safeVenues],
   )
 
-  const categoryById = useMemo(
-    () =>
-      safeCategories.reduce<Record<string, string>>((acc, category) => {
-        acc[category.id] = category.name
-        return acc
-      }, {}),
-    [safeCategories],
-  )
-
   const slidePopular = (direction: 'left' | 'right') => {
     const node = popularRef.current
     if (!node) {
@@ -332,11 +321,11 @@ function EventsPage({ onRequireAuth }: Props) {
                 key={`popular-${event.id}`}
                 role="button"
                 tabIndex={0}
-                onClick={() => setActiveEvent(event)}
+                onClick={() => onOpenEvent(event.id)}
                 onKeyDown={(keyEvent) => {
                   if (keyEvent.key === 'Enter' || keyEvent.key === ' ') {
                     keyEvent.preventDefault()
-                    setActiveEvent(event)
+                    onOpenEvent(event.id)
                   }
                 }}
               >
@@ -357,7 +346,7 @@ function EventsPage({ onRequireAuth }: Props) {
                     type="button"
                     onClick={(clickEvent) => {
                       clickEvent.stopPropagation()
-                      setActiveEvent(event)
+                      onOpenEvent(event.id)
                     }}
                   >
                     Купить билет
@@ -431,22 +420,11 @@ function EventsPage({ onRequireAuth }: Props) {
               key={event.id}
               event={event}
               venueName={venueById[event.venueId]?.name}
-              onDetails={(selected) => setActiveEvent(selected)}
+              onDetails={(selected) => onOpenEvent(selected.id)}
             />
           ))}
         </div>
       </div>
-
-      {activeEvent && (
-        <EventDetailsModal
-          event={activeEvent}
-          venueName={venueById[activeEvent.venueId]?.name || 'Неизвестно'}
-          venueAddress={venueById[activeEvent.venueId]?.address || 'Адрес не указан'}
-          categoryName={categoryById[activeEvent.categoryId] || 'Без категории'}
-          onClose={() => setActiveEvent(null)}
-          onRequireAuth={onRequireAuth}
-        />
-      )}
     </section>
   )
 }

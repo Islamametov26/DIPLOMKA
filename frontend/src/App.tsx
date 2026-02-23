@@ -4,6 +4,7 @@ import AuthModal from './components/AuthModal'
 import ProfileModal from './components/ProfileModal'
 import { useAuth } from './context/AuthContext'
 import AdminPage from './pages/AdminPage'
+import EventDetailsPage from './pages/EventDetailsPage'
 import EventsPage from './pages/EventsPage'
 import VenuesPage from './pages/VenuesPage'
 
@@ -32,6 +33,9 @@ function App() {
   const [route, setRoute] = useState(window.location.pathname)
   const isAdmin = route.startsWith('/admin')
   const isVenues = route.startsWith('/venues')
+  const eventMatch = route.match(/^\/events\/([^/]+)$/)
+  const eventId = eventMatch ? eventMatch[1] : ''
+  const isEventDetails = Boolean(eventId)
 
   useEffect(() => {
     const handlePop = () => setRoute(window.location.pathname)
@@ -66,7 +70,11 @@ function App() {
         <nav className="app__nav" aria-label="Primary" />
         <div className="app__actions">
           <div className="app__nav">
-            <a className={`app__link${!isAdmin && !isVenues ? ' app__link--active' : ''}`} href="/" onClick={handleNavLink('/')}>
+            <a
+              className={`app__link${!isAdmin && !isVenues ? ' app__link--active' : ''}`}
+              href="/"
+              onClick={handleNavLink('/')}
+            >
               Афиша
             </a>
             <a
@@ -99,8 +107,10 @@ function App() {
           <AdminPage onRequireAuth={() => setAuthOpen(true)} />
         ) : isVenues ? (
           <VenuesPage />
+        ) : isEventDetails ? (
+          <EventDetailsPage eventId={eventId} onBack={() => navigate('/')} onRequireAuth={() => setAuthOpen(true)} />
         ) : (
-          <EventsPage onRequireAuth={() => setAuthOpen(true)} />
+          <EventsPage onOpenEvent={(id) => navigate(`/events/${id}`)} />
         )}
       </main>
       {aboutOpen && (
