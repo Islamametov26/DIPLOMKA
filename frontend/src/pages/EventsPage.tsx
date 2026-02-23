@@ -88,8 +88,6 @@ function EventsPage({ onRequireAuth }: Props) {
   })
   const [query, setQuery] = useState('')
   const popularRef = useRef<HTMLDivElement | null>(null)
-  const daySlideTimerRef = useRef<number | null>(null)
-  const [daySlideDirection, setDaySlideDirection] = useState<'left' | 'right' | ''>('')
 
   const safeItems = Array.isArray(state.items) ? state.items : []
   const safeCategories = Array.isArray(state.categories) ? state.categories : []
@@ -190,17 +188,6 @@ function EventsPage({ onRequireAuth }: Props) {
   const canSlideDaysLeft = dayWindowStart > 0
   const canSlideDaysRight = dayWindowStart + visibleDayCount < calendarDays.length
 
-  const slideDays = (direction: 'left' | 'right') => {
-    const delta = direction === 'right' ? visibleDayCount : -visibleDayCount
-    const maxStart = Math.max(0, calendarDays.length - visibleDayCount)
-    setDayWindowStart((prev) => Math.min(maxStart, Math.max(0, prev + delta)))
-    setDaySlideDirection(direction)
-    if (daySlideTimerRef.current) {
-      window.clearTimeout(daySlideTimerRef.current)
-    }
-    daySlideTimerRef.current = window.setTimeout(() => setDaySlideDirection(''), 260)
-  }
-
   useEffect(() => {
     if (calendarDays.length === 0) {
       setSelectedDateKey('')
@@ -217,15 +204,6 @@ function EventsPage({ onRequireAuth }: Props) {
       setDayWindowStart(maxStart)
     }
   }, [calendarDays, dayWindowStart, selectedDateKey, visibleDayCount])
-
-  useEffect(
-    () => () => {
-      if (daySlideTimerRef.current) {
-        window.clearTimeout(daySlideTimerRef.current)
-      }
-    },
-    [],
-  )
 
   const currentMonthCaption = useMemo(() => {
     if (visibleDays.length === 0) {
@@ -317,6 +295,14 @@ function EventsPage({ onRequireAuth }: Props) {
                 {category.name}
               </button>
             ))}
+            <input
+              className="events__search-input events__search-input--hero"
+              type="search"
+              placeholder="Поиск..."
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              aria-label="Поиск событий"
+            />
           </div>
         )}
         <h1 className="events__title">Афиша мероприятий</h1>
@@ -359,16 +345,6 @@ function EventsPage({ onRequireAuth }: Props) {
       )}
 
       <div className="events__panel">
-        <div className="events__search">
-          <input
-            className="events__search-input"
-            type="search"
-            placeholder="Поиск по названию или описанию..."
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </div>
-
         {calendarDays.length > 0 && (
           <div className="events__datebar">
             <div className="events__month-caption">{currentMonthCaption}</div>
@@ -380,13 +356,11 @@ function EventsPage({ onRequireAuth }: Props) {
                 </button>
               </div>
             )}
-            <div
-              className={`events__days${daySlideDirection === 'left' ? ' events__days--slide-left' : ''}${daySlideDirection === 'right' ? ' events__days--slide-right' : ''}`}
-            >
+            <div className="events__days">
               <button
                 className="events__day-arrow"
                 type="button"
-                onClick={() => slideDays('left')}
+                onClick={() => setDayWindowStart((prev) => Math.max(0, prev - visibleDayCount))}
                 disabled={!canSlideDaysLeft}
                 aria-label="Предыдущие даты"
               >
@@ -407,7 +381,9 @@ function EventsPage({ onRequireAuth }: Props) {
               <button
                 className="events__day-arrow"
                 type="button"
-                onClick={() => slideDays('right')}
+                onClick={() =>
+                  setDayWindowStart((prev) => Math.min(Math.max(0, calendarDays.length - visibleDayCount), prev + visibleDayCount))
+                }
                 disabled={!canSlideDaysRight}
                 aria-label="Следующие даты"
               >
