@@ -265,8 +265,11 @@ function EventsPage({ onRequireAuth }: Props) {
     if (!node) {
       return
     }
-    const delta = Math.max(280, Math.floor(node.clientWidth * 0.75))
-    node.scrollBy({ left: direction === 'right' ? delta : -delta, behavior: 'smooth' })
+    const firstCard = node.querySelector('.events__popular-card') as HTMLElement | null
+    const gap = Number.parseInt(getComputedStyle(node).columnGap || '14', 10) || 14
+    const step = firstCard ? firstCard.offsetWidth + gap : Math.max(280, Math.floor(node.clientWidth * 0.75))
+    const delta = direction === 'right' ? step : -step
+    node.scrollBy({ left: delta, behavior: 'smooth' })
   }
 
   return (
