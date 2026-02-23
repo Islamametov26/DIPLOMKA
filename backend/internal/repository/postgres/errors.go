@@ -27,3 +27,14 @@ func isForeignKeyViolation(err error) bool {
 	}
 	return false
 }
+
+func isUndefinedColumn(err error) bool {
+	if err == nil {
+		return false
+	}
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code == "42703"
+	}
+	return false
+}

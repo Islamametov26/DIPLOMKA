@@ -14,25 +14,77 @@ type EventRepository struct {
 	db *sql.DB
 }
 
+const listEventsQueryWithMedia = `
+	SELECT e.id, e.title, e.description, e.image_url, e.trailer_url, e.gallery_urls, e.start_at, e.end_at, e.venue_id,
+	       COALESCE(ec.category_id, '00000000-0000-0000-0000-000000000000'::uuid) AS category_id,
+	       e.published, e.created_by, e.created_at, e.updated_at
+	FROM events e
+	LEFT JOIN LATERAL (
+		SELECT category_id
+		FROM event_categories
+		WHERE event_id = e.id
+		ORDER BY category_id
+		LIMIT 1
+	) ec ON true
+	ORDER BY e.start_at ASC
+`
+
+const listEventsQueryLegacy = `
+	SELECT e.id, e.title, e.description, e.image_url, e.start_at, e.end_at, e.venue_id,
+	       COALESCE(ec.category_id, '00000000-0000-0000-0000-000000000000'::uuid) AS category_id,
+	       e.published, e.created_by, e.created_at, e.updated_at
+	FROM events e
+	LEFT JOIN LATERAL (
+		SELECT category_id
+		FROM event_categories
+		WHERE event_id = e.id
+		ORDER BY category_id
+		LIMIT 1
+	) ec ON true
+	ORDER BY e.start_at ASC
+`
+
+const getEventQueryWithMedia = `
+	SELECT e.id, e.title, e.description, e.image_url, e.trailer_url, e.gallery_urls, e.start_at, e.end_at, e.venue_id,
+	       COALESCE(ec.category_id, '00000000-0000-0000-0000-000000000000'::uuid) AS category_id,
+	       e.published, e.created_by, e.created_at, e.updated_at
+	FROM events e
+	LEFT JOIN LATERAL (
+		SELECT category_id
+		FROM event_categories
+		WHERE event_id = e.id
+		ORDER BY category_id
+		LIMIT 1
+	) ec ON true
+	WHERE e.id = $1
+`
+
+const getEventQueryLegacy = `
+	SELECT e.id, e.title, e.description, e.image_url, e.start_at, e.end_at, e.venue_id,
+	       COALESCE(ec.category_id, '00000000-0000-0000-0000-000000000000'::uuid) AS category_id,
+	       e.published, e.created_by, e.created_at, e.updated_at
+	FROM events e
+	LEFT JOIN LATERAL (
+		SELECT category_id
+		FROM event_categories
+		WHERE event_id = e.id
+		ORDER BY category_id
+		LIMIT 1
+	) ec ON true
+	WHERE e.id = $1
+`
+
 func NewEventRepository(db *sql.DB) *EventRepository {
 	return &EventRepository{db: db}
 }
 
 func (r *EventRepository) List(ctx context.Context) ([]domain.Event, error) {
-	rows, err := r.db.QueryContext(ctx, `
-		SELECT e.id, e.title, e.description, e.image_url, e.trailer_url, e.gallery_urls, e.start_at, e.end_at, e.venue_id,
-		       COALESCE(ec.category_id, '00000000-0000-0000-0000-000000000000'::uuid) AS category_id,
-		       e.published, e.created_by, e.created_at, e.updated_at
-		FROM events e
-		LEFT JOIN LATERAL (
-			SELECT category_id
-			FROM event_categories
-			WHERE event_id = e.id
-			ORDER BY category_id
-			LIMIT 1
-		) ec ON true
-		ORDER BY e.start_at ASC
-	`)
+	rows, err := r.db.QueryContext(ctx, listEventsQueryWithMedia)
+	scanWithMedia := true
+	if err != nil && isUndefinedColumn(err) {
+		rows, err = r.db.QueryContext(ctx, listEventsQueryLegacy)
+		scanWithMedia = false
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -41,23 +93,42 @@ func (r *EventRepository) List(ctx context.Context) ([]domain.Event, error) {
 	var events []domain.Event
 	for rows.Next() {
 		var event domain.Event
-		if err := rows.Scan(
-			&event.ID,
-			&event.Title,
-			&event.Description,
-			&event.ImageURL,
-			&event.TrailerURL,
-			&event.GalleryURLs,
-			&event.StartAt,
-			&event.EndAt,
-			&event.VenueID,
-			&event.CategoryID,
-			&event.Published,
-			&event.CreatedBy,
-			&event.CreatedAt,
-			&event.UpdatedAt,
-		); err != nil {
-			return nil, err
+		if scanWithMedia {
+			if err := rows.Scan(
+				&event.ID,
+				&event.Title,
+				&event.Description,
+				&event.ImageURL,
+				&event.TrailerURL,
+				&event.GalleryURLs,
+				&event.StartAt,
+				&event.EndAt,
+				&event.VenueID,
+				&event.CategoryID,
+				&event.Published,
+				&event.CreatedBy,
+				&event.CreatedAt,
+				&event.UpdatedAt,
+			); err != nil {
+				return nil, err
+			}
+		} else {
+			if err := rows.Scan(
+				&event.ID,
+				&event.Title,
+				&event.Description,
+				&event.ImageURL,
+				&event.StartAt,
+				&event.EndAt,
+				&event.VenueID,
+				&event.CategoryID,
+				&event.Published,
+				&event.CreatedBy,
+				&event.CreatedAt,
+				&event.UpdatedAt,
+			); err != nil {
+				return nil, err
+			}
 		}
 		events = append(events, event)
 	}
@@ -70,20 +141,7 @@ func (r *EventRepository) List(ctx context.Context) ([]domain.Event, error) {
 
 func (r *EventRepository) Get(ctx context.Context, id uuid.UUID) (domain.Event, error) {
 	var event domain.Event
-	row := r.db.QueryRowContext(ctx, `
-		SELECT e.id, e.title, e.description, e.image_url, e.trailer_url, e.gallery_urls, e.start_at, e.end_at, e.venue_id,
-		       COALESCE(ec.category_id, '00000000-0000-0000-0000-000000000000'::uuid) AS category_id,
-		       e.published, e.created_by, e.created_at, e.updated_at
-		FROM events e
-		LEFT JOIN LATERAL (
-			SELECT category_id
-			FROM event_categories
-			WHERE event_id = e.id
-			ORDER BY category_id
-			LIMIT 1
-		) ec ON true
-		WHERE e.id = $1
-	`, id)
+	row := r.db.QueryRowContext(ctx, getEventQueryWithMedia, id)
 	if err := row.Scan(
 		&event.ID,
 		&event.Title,
@@ -100,6 +158,30 @@ func (r *EventRepository) Get(ctx context.Context, id uuid.UUID) (domain.Event, 
 		&event.CreatedAt,
 		&event.UpdatedAt,
 	); err != nil {
+		if isUndefinedColumn(err) {
+			fallbackRow := r.db.QueryRowContext(ctx, getEventQueryLegacy, id)
+			fallbackErr := fallbackRow.Scan(
+				&event.ID,
+				&event.Title,
+				&event.Description,
+				&event.ImageURL,
+				&event.StartAt,
+				&event.EndAt,
+				&event.VenueID,
+				&event.CategoryID,
+				&event.Published,
+				&event.CreatedBy,
+				&event.CreatedAt,
+				&event.UpdatedAt,
+			)
+			if errors.Is(fallbackErr, sql.ErrNoRows) {
+				return domain.Event{}, repository.ErrNotFound
+			}
+			if fallbackErr != nil {
+				return domain.Event{}, fallbackErr
+			}
+			return event, nil
+		}
 		if errors.Is(err, sql.ErrNoRows) {
 			return domain.Event{}, repository.ErrNotFound
 		}
