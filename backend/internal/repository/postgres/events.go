@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 
 	"github.com/google/uuid"
@@ -15,7 +16,9 @@ type EventRepository struct {
 }
 
 const listEventsQueryWithMedia = `
-	SELECT e.id, e.title, e.description, e.image_url, e.trailer_url, e.gallery_urls, e.start_at, e.end_at, e.venue_id,
+	SELECT e.id, e.title, e.description, e.image_url, COALESCE(e.trailer_url, '') AS trailer_url,
+	       COALESCE(array_to_json(e.gallery_urls)::text, '[]') AS gallery_urls_json,
+	       e.start_at, e.end_at, e.venue_id,
 	       COALESCE(ec.category_id, '00000000-0000-0000-0000-000000000000'::uuid) AS category_id,
 	       e.published, e.created_by, e.created_at, e.updated_at
 	FROM events e
@@ -45,7 +48,9 @@ const listEventsQueryLegacy = `
 `
 
 const getEventQueryWithMedia = `
-	SELECT e.id, e.title, e.description, e.image_url, e.trailer_url, e.gallery_urls, e.start_at, e.end_at, e.venue_id,
+	SELECT e.id, e.title, e.description, e.image_url, COALESCE(e.trailer_url, '') AS trailer_url,
+	       COALESCE(array_to_json(e.gallery_urls)::text, '[]') AS gallery_urls_json,
+	       e.start_at, e.end_at, e.venue_id,
 	       COALESCE(ec.category_id, '00000000-0000-0000-0000-000000000000'::uuid) AS category_id,
 	       e.published, e.created_by, e.created_at, e.updated_at
 	FROM events e
@@ -77,7 +82,9 @@ const getEventQueryLegacy = `
 const createEventQueryWithMedia = `
 	INSERT INTO events (title, description, image_url, trailer_url, gallery_urls, start_at, end_at, venue_id, published, created_by)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-	RETURNING id, title, description, image_url, trailer_url, gallery_urls, start_at, end_at, venue_id, published, created_by, created_at, updated_at
+	RETURNING id, title, description, image_url, COALESCE(trailer_url, '') AS trailer_url,
+	          COALESCE(array_to_json(gallery_urls)::text, '[]') AS gallery_urls_json,
+	          start_at, end_at, venue_id, published, created_by, created_at, updated_at
 `
 
 const createEventQueryLegacy = `
@@ -99,8 +106,21 @@ const updateEventQueryWithMedia = `
 	    published = $9,
 	    updated_at = now()
 	WHERE id = $10
-	RETURNING id, title, description, image_url, trailer_url, gallery_urls, start_at, end_at, venue_id, published, created_by, created_at, updated_at
+	RETURNING id, title, description, image_url, COALESCE(trailer_url, '') AS trailer_url,
+	          COALESCE(array_to_json(gallery_urls)::text, '[]') AS gallery_urls_json,
+	          start_at, end_at, venue_id, published, created_by, created_at, updated_at
 `
+
+func decodeGalleryURLs(raw string) ([]string, error) {
+	if raw == "" {
+		return nil, nil
+	}
+	var values []string
+	if err := json.Unmarshal([]byte(raw), &values); err != nil {
+		return nil, err
+	}
+	return values, nil
+}
 
 const updateEventQueryLegacy = `
 	UPDATE events
@@ -135,6 +155,7 @@ func (r *EventRepository) List(ctx context.Context) ([]domain.Event, error) {
 	var events []domain.Event
 	for rows.Next() {
 		var event domain.Event
+		var galleryRaw string
 		if scanWithMedia {
 			if err := rows.Scan(
 				&event.ID,
@@ -142,7 +163,7 @@ func (r *EventRepository) List(ctx context.Context) ([]domain.Event, error) {
 				&event.Description,
 				&event.ImageURL,
 				&event.TrailerURL,
-				&event.GalleryURLs,
+				&galleryRaw,
 				&event.StartAt,
 				&event.EndAt,
 				&event.VenueID,
@@ -154,6 +175,11 @@ func (r *EventRepository) List(ctx context.Context) ([]domain.Event, error) {
 			); err != nil {
 				return nil, err
 			}
+			gallery, err := decodeGalleryURLs(galleryRaw)
+			if err != nil {
+				return nil, err
+			}
+			event.GalleryURLs = gallery
 		} else {
 			if err := rows.Scan(
 				&event.ID,
@@ -183,6 +209,7 @@ func (r *EventRepository) List(ctx context.Context) ([]domain.Event, error) {
 
 func (r *EventRepository) Get(ctx context.Context, id uuid.UUID) (domain.Event, error) {
 	var event domain.Event
+	var galleryRaw string
 	row := r.db.QueryRowContext(ctx, getEventQueryWithMedia, id)
 	if err := row.Scan(
 		&event.ID,
@@ -190,7 +217,7 @@ func (r *EventRepository) Get(ctx context.Context, id uuid.UUID) (domain.Event, 
 		&event.Description,
 		&event.ImageURL,
 		&event.TrailerURL,
-		&event.GalleryURLs,
+		&galleryRaw,
 		&event.StartAt,
 		&event.EndAt,
 		&event.VenueID,
@@ -229,6 +256,11 @@ func (r *EventRepository) Get(ctx context.Context, id uuid.UUID) (domain.Event, 
 		}
 		return domain.Event{}, err
 	}
+	gallery, err := decodeGalleryURLs(galleryRaw)
+	if err != nil {
+		return domain.Event{}, err
+	}
+	event.GalleryURLs = gallery
 
 	return event, nil
 }
@@ -256,13 +288,14 @@ func (r *EventRepository) Create(ctx context.Context, event domain.Event) (domai
 		event.Published,
 		event.CreatedBy,
 	)
+	var galleryRaw string
 	scanErr := row.Scan(
 		&event.ID,
 		&event.Title,
 		&event.Description,
 		&event.ImageURL,
 		&event.TrailerURL,
-		&event.GalleryURLs,
+		&galleryRaw,
 		&event.StartAt,
 		&event.EndAt,
 		&event.VenueID,
@@ -306,6 +339,13 @@ func (r *EventRepository) Create(ctx context.Context, event domain.Event) (domai
 		}
 		return domain.Event{}, scanErr
 	}
+	if galleryRaw != "" {
+		gallery, err := decodeGalleryURLs(galleryRaw)
+		if err != nil {
+			return domain.Event{}, err
+		}
+		event.GalleryURLs = gallery
+	}
 
 	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO event_categories (event_id, category_id)
@@ -346,13 +386,14 @@ func (r *EventRepository) Update(ctx context.Context, event domain.Event) (domai
 		event.Published,
 		event.ID,
 	)
+	var galleryRaw string
 	scanErr := row.Scan(
 		&event.ID,
 		&event.Title,
 		&event.Description,
 		&event.ImageURL,
 		&event.TrailerURL,
-		&event.GalleryURLs,
+		&galleryRaw,
 		&event.StartAt,
 		&event.EndAt,
 		&event.VenueID,
@@ -398,6 +439,13 @@ func (r *EventRepository) Update(ctx context.Context, event domain.Event) (domai
 			return domain.Event{}, repository.ErrNotFound
 		}
 		return domain.Event{}, scanErr
+	}
+	if galleryRaw != "" {
+		gallery, err := decodeGalleryURLs(galleryRaw)
+		if err != nil {
+			return domain.Event{}, err
+		}
+		event.GalleryURLs = gallery
 	}
 
 	if _, err := tx.ExecContext(ctx, `DELETE FROM event_categories WHERE event_id = $1`, event.ID); err != nil {
