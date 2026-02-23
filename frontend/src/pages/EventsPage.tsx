@@ -59,6 +59,19 @@ function EventsPage({ onRequireAuth }: Props) {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all')
   const [selectedMonthKey, setSelectedMonthKey] = useState<string>('')
   const [selectedDay, setSelectedDay] = useState<number>(1)
+  const [dayWindowStart, setDayWindowStart] = useState<number>(0)
+  const [visibleDayCount, setVisibleDayCount] = useState<number>(() => {
+    if (typeof window === 'undefined') {
+      return 9
+    }
+    if (window.innerWidth < 720) {
+      return 5
+    }
+    if (window.innerWidth < 1024) {
+      return 7
+    }
+    return 9
+  })
   const [query, setQuery] = useState('')
   const safeItems = Array.isArray(state.items) ? state.items : []
   const safeCategories = Array.isArray(state.categories) ? state.categories : []
@@ -138,6 +151,13 @@ function EventsPage({ onRequireAuth }: Props) {
     return Array.from({ length: total }, (_, i) => i + 1)
   }, [selectedMonth])
 
+  const visibleDays = useMemo(
+    () => days.slice(dayWindowStart, dayWindowStart + visibleDayCount),
+    [dayWindowStart, days],
+  )
+  const canSlideDaysLeft = dayWindowStart > 0
+  const canSlideDaysRight = dayWindowStart + visibleDayCount < days.length
+
   const monthEventDays = useMemo(() => {
     if (!selectedMonth) {
       return new Set<number>()
@@ -151,6 +171,43 @@ function EventsPage({ onRequireAuth }: Props) {
     }
     return set
   }, [safeItems, selectedMonth])
+
+  useEffect(() => {
+    if (days.length === 0) {
+      setDayWindowStart(0)
+      return
+    }
+    const selectedIndex = Math.max(0, days.indexOf(selectedDay))
+    if (selectedIndex < dayWindowStart) {
+      setDayWindowStart(selectedIndex)
+      return
+    }
+    if (selectedIndex >= dayWindowStart + visibleDayCount) {
+      setDayWindowStart(Math.max(0, selectedIndex - visibleDayCount + 1))
+      return
+    }
+    const maxStart = Math.max(0, days.length - visibleDayCount)
+    if (dayWindowStart > maxStart) {
+      setDayWindowStart(maxStart)
+    }
+  }, [dayWindowStart, days, selectedDay, visibleDayCount])
+
+  useEffect(() => {
+    const updateVisibleCount = () => {
+      if (window.innerWidth < 720) {
+        setVisibleDayCount(5)
+        return
+      }
+      if (window.innerWidth < 1024) {
+        setVisibleDayCount(7)
+        return
+      }
+      setVisibleDayCount(9)
+    }
+    updateVisibleCount()
+    window.addEventListener('resize', updateVisibleCount)
+    return () => window.removeEventListener('resize', updateVisibleCount)
+  }, [])
 
   const filteredItems = useMemo(() => {
     if (!selectedMonth) {
@@ -253,6 +310,7 @@ function EventsPage({ onRequireAuth }: Props) {
                     .map((item) => toLocalParts(item.startAt))
                     .find((parts) => parts.year === month.year && parts.month === month.month)?.day
                   setSelectedDay(firstEventDay || 1)
+                  setDayWindowStart(0)
                 }}
               >
                 {monthOptions.map((month) => (
@@ -264,7 +322,16 @@ function EventsPage({ onRequireAuth }: Props) {
             </div>
 
             <div className="events__days">
-              {days.map((day) => {
+              <button
+                className="events__day-arrow"
+                type="button"
+                onClick={() => setDayWindowStart((prev) => Math.max(0, prev - visibleDayCount))}
+                disabled={!canSlideDaysLeft}
+                aria-label="Предыдущие даты"
+              >
+                ‹
+              </button>
+              {visibleDays.map((day) => {
                 const hasEvents = monthEventDays.has(day)
                 return (
                   <button
@@ -278,6 +345,19 @@ function EventsPage({ onRequireAuth }: Props) {
                   </button>
                 )
               })}
+              <button
+                className="events__day-arrow"
+                type="button"
+                onClick={() =>
+                  setDayWindowStart((prev) =>
+                    Math.min(Math.max(0, days.length - visibleDayCount), prev + visibleDayCount),
+                  )
+                }
+                disabled={!canSlideDaysRight}
+                aria-label="Следующие даты"
+              >
+                ›
+              </button>
             </div>
           </div>
         )}

@@ -250,8 +250,7 @@
 .events__days {
   display: flex;
   gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
+  align-items: center;
 }
 
 .events__day {
@@ -295,6 +294,25 @@
 .events__day-number {
   font-size: 0.95rem;
   line-height: 1;
+}
+
+.events__day-arrow {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1.05rem;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+
+.events__day-arrow:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .events__filters {
