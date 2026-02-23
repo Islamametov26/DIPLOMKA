@@ -1,14 +1,78 @@
-﻿import { useAuth } from '../context/AuthContext'
+﻿import { useEffect, useMemo, useState } from 'react'
+import { cancelBooking, listBookings } from '../api/bookings'
+import { useAuth } from '../context/AuthContext'
+import type { Booking } from '../types/booking'
 import { cleanText } from '../utils/text'
 
 type Props = {
   onClose: () => void
 }
 
+type LoadState = {
+  status: 'idle' | 'loading' | 'ready' | 'error'
+  items: Booking[]
+  error: string | null
+}
+
+const emptyState: LoadState = { status: 'loading', items: [], error: null }
+const moneyFormatter = new Intl.NumberFormat('ru-RU')
+
+function formatRange(start: string, end: string) {
+  const startDate = new Date(start)
+  const endDate = new Date(end)
+  return `${startDate.toLocaleString('ru-RU')} - ${endDate.toLocaleString('ru-RU')}`
+}
+
 function ProfileModal({ onClose }: Props) {
   const { user, logout } = useAuth()
   const safeUsername = cleanText(user?.username, 'Пользователь')
   const safeEmail = cleanText(user?.email, 'Не указан')
+
+  const [state, setState] = useState<LoadState>(emptyState)
+  const [filter, setFilter] = useState<'all' | 'active' | 'history'>('all')
+  const safeItems = Array.isArray(state.items) ? state.items : []
+
+  const loadBookings = async () => {
+    setState((prev) => ({ ...prev, status: 'loading', error: null }))
+    try {
+      const items = await listBookings()
+      setState({ status: 'ready', items, error: null })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Не удалось загрузить билеты.'
+      setState({ status: 'error', items: [], error: cleanText(message, 'Не удалось загрузить билеты.') })
+    }
+  }
+
+  useEffect(() => {
+    loadBookings()
+  }, [])
+
+  const summary = useMemo(() => {
+    const active = safeItems.filter((item) => item.status === 'active').length
+    const history = safeItems.filter((item) => item.status !== 'active').length
+    const totalSpent = safeItems.reduce((acc, item) => (item.status === 'canceled' ? acc : acc + item.totalPrice), 0)
+    return { total: safeItems.length, active, history, totalSpent }
+  }, [safeItems])
+
+  const visibleItems = useMemo(() => {
+    if (filter === 'active') {
+      return safeItems.filter((item) => item.status === 'active')
+    }
+    if (filter === 'history') {
+      return safeItems.filter((item) => item.status !== 'active')
+    }
+    return safeItems
+  }, [filter, safeItems])
+
+  const handleCancel = async (id: string) => {
+    try {
+      await cancelBooking(id)
+      await loadBookings()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Не удалось отменить бронь.'
+      setState((prev) => ({ ...prev, error: cleanText(message, 'Не удалось отменить бронь.'), status: 'error' }))
+    }
+  }
 
   return (
     <div className="modal" role="dialog" aria-modal="true">
@@ -31,12 +95,87 @@ function ProfileModal({ onClose }: Props) {
 
         <div className="modal__section">
           <h3 className="modal__section-title">Аккаунт</h3>
-          <p className="modal__description">
-            Сайт работает в формате информационной афиши: здесь можно смотреть события, площадки и расписание.
-          </p>
           <div className="modal__meta">
             <span>Логин: {safeUsername}</span>
             <span>Email (системный): {safeEmail}</span>
+          </div>
+        </div>
+
+        <div className="profile-summary">
+          <div className="profile-summary__item">
+            <div className="profile-summary__label">Всего билетов</div>
+            <div className="profile-summary__value">{summary.total}</div>
+          </div>
+          <div className="profile-summary__item">
+            <div className="profile-summary__label">Активные</div>
+            <div className="profile-summary__value">{summary.active}</div>
+          </div>
+          <div className="profile-summary__item">
+            <div className="profile-summary__label">История</div>
+            <div className="profile-summary__value">{summary.history}</div>
+          </div>
+          <div className="profile-summary__item">
+            <div className="profile-summary__label">Потрачено</div>
+            <div className="profile-summary__value">{moneyFormatter.format(summary.totalSpent)} KZT</div>
+          </div>
+        </div>
+
+        <div className="modal__tabs">
+          <button className={`modal__tab${filter === 'all' ? ' modal__tab--active' : ''}`} type="button" onClick={() => setFilter('all')}>
+            Все
+          </button>
+          <button className={`modal__tab${filter === 'active' ? ' modal__tab--active' : ''}`} type="button" onClick={() => setFilter('active')}>
+            Активные
+          </button>
+          <button className={`modal__tab${filter === 'history' ? ' modal__tab--active' : ''}`} type="button" onClick={() => setFilter('history')}>
+            История
+          </button>
+        </div>
+
+        <div className="modal__section">
+          <h3 className="modal__section-title">Мои билеты</h3>
+          {(state.status === 'idle' || state.status === 'loading') && <div className="modal__status">Загрузка...</div>}
+          {state.error && <div className="modal__status modal__status--error">{state.error}</div>}
+          {state.status === 'ready' && visibleItems.length === 0 && <div className="modal__status">Билетов пока нет.</div>}
+
+          <div className="modal__list">
+            {visibleItems.map((booking) => {
+              const safeSeats = Array.isArray(booking.seats) ? booking.seats : []
+              const safeTitle = cleanText(booking.eventTitle, 'Событие')
+              const safeVenue = cleanText(booking.venueName, 'Площадка')
+
+              return (
+                <div className="ticket" key={booking.id}>
+                  {booking.eventImage ? (
+                    <img className="ticket__image" src={booking.eventImage} alt={safeTitle} loading="lazy" />
+                  ) : (
+                    <div className="ticket__image ticket__image--placeholder" aria-hidden="true" />
+                  )}
+
+                  <div className="ticket__main">
+                    <div className="ticket__top">
+                      <div className="ticket__title">{safeTitle}</div>
+                      <div className={`ticket__status ticket__status--${booking.status}`}>
+                        {booking.status === 'active' ? 'Активен' : 'Отменен'}
+                      </div>
+                    </div>
+
+                    <div className="ticket__meta">{safeVenue}</div>
+                    <div className="ticket__meta">{formatRange(booking.eventStart, booking.eventEnd)}</div>
+                    <div className="ticket__meta">Места: {safeSeats.length > 0 ? safeSeats.join(', ') : 'не указаны'}</div>
+
+                    <div className="ticket__footer">
+                      <div className="ticket__price">{moneyFormatter.format(booking.totalPrice)} {booking.currency}</div>
+                      {booking.status === 'active' && (
+                        <button className="modal__secondary" type="button" onClick={() => handleCancel(booking.id)}>
+                          Отменить
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>

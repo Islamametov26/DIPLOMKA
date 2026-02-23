@@ -22,27 +22,39 @@ type Props = {
   onRequireAuth: () => void
 }
 
-function formatDateLabel(value: string) {
-  return new Date(value).toLocaleDateString('ru-RU', {
-    day: '2-digit',
-    month: 'short',
-    weekday: 'short',
+type MonthOption = {
+  key: string
+  year: number
+  month: number
+  label: string
+}
+
+function toLocalParts(value: string) {
+  const date = new Date(value)
+  return {
+    year: date.getFullYear(),
+    month: date.getMonth() + 1,
+    day: date.getDate(),
+  }
+}
+
+function monthLabel(year: number, month: number) {
+  return new Date(year, month - 1, 1).toLocaleDateString('ru-RU', {
+    month: 'long',
+    year: 'numeric',
   })
 }
 
-function toDateKey(value: string) {
-  const date = new Date(value)
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
+function daysInMonth(year: number, month: number) {
+  return new Date(year, month, 0).getDate()
 }
 
 function EventsPage({ onRequireAuth }: Props) {
   const [state, setState] = useState<EventsState>(emptyState)
   const [activeEvent, setActiveEvent] = useState<Event | null>(null)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all')
-  const [selectedDate, setSelectedDate] = useState<string>('all')
+  const [selectedMonthKey, setSelectedMonthKey] = useState<string>('')
+  const [selectedDay, setSelectedDay] = useState<number>(1)
   const [query, setQuery] = useState('')
   const safeItems = Array.isArray(state.items) ? state.items : []
   const safeCategories = Array.isArray(state.categories) ? state.categories : []
@@ -74,26 +86,67 @@ function EventsPage({ onRequireAuth }: Props) {
     return () => controller.abort()
   }, [])
 
-  const availableDates = useMemo(() => {
-    const unique = new Map<string, string>()
+  const monthOptions = useMemo<MonthOption[]>(() => {
+    const unique = new Map<string, MonthOption>()
     for (const event of safeItems) {
-      const key = toDateKey(event.startAt)
+      const parts = toLocalParts(event.startAt)
+      const key = `${parts.year}-${String(parts.month).padStart(2, '0')}`
       if (!unique.has(key)) {
-        unique.set(key, event.startAt)
+        unique.set(key, {
+          key,
+          year: parts.year,
+          month: parts.month,
+          label: monthLabel(parts.year, parts.month),
+        })
       }
     }
-    return [...unique.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, raw]) => ({ key, label: formatDateLabel(raw) }))
+    return [...unique.values()].sort((a, b) => a.key.localeCompare(b.key))
   }, [safeItems])
 
+  useEffect(() => {
+    if (monthOptions.length === 0) {
+      setSelectedMonthKey('')
+      return
+    }
+
+    if (!selectedMonthKey || !monthOptions.some((item) => item.key === selectedMonthKey)) {
+      const fallback = monthOptions[0]
+      setSelectedMonthKey(fallback.key)
+
+      const firstDay = safeItems
+        .map((event) => toLocalParts(event.startAt))
+        .find((parts) => parts.year === fallback.year && parts.month === fallback.month)?.day
+
+      setSelectedDay(firstDay || 1)
+    }
+  }, [monthOptions, safeItems, selectedMonthKey])
+
+  const selectedMonth = useMemo(
+    () => monthOptions.find((item) => item.key === selectedMonthKey) || null,
+    [monthOptions, selectedMonthKey],
+  )
+
+  const days = useMemo(() => {
+    if (!selectedMonth) {
+      return [] as number[]
+    }
+    const total = daysInMonth(selectedMonth.year, selectedMonth.month)
+    return Array.from({ length: total }, (_, i) => i + 1)
+  }, [selectedMonth])
+
   const filteredItems = useMemo(() => {
+    if (!selectedMonth) {
+      return [] as Event[]
+    }
+
     const normalizedQuery = query.trim().toLowerCase()
+
     return safeItems.filter((event) => {
-      if (selectedCategoryId !== 'all' && event.categoryId !== selectedCategoryId) {
+      const parts = toLocalParts(event.startAt)
+      if (parts.year !== selectedMonth.year || parts.month !== selectedMonth.month || parts.day !== selectedDay) {
         return false
       }
-      if (selectedDate !== 'all' && toDateKey(event.startAt) !== selectedDate) {
+      if (selectedCategoryId !== 'all' && event.categoryId !== selectedCategoryId) {
         return false
       }
       if (!normalizedQuery) {
@@ -101,7 +154,7 @@ function EventsPage({ onRequireAuth }: Props) {
       }
       return `${event.title} ${event.description}`.toLowerCase().includes(normalizedQuery)
     })
-  }, [query, safeItems, selectedCategoryId, selectedDate])
+  }, [query, safeItems, selectedCategoryId, selectedMonth, selectedDay])
 
   const venueById = useMemo(
     () =>
@@ -143,26 +196,40 @@ function EventsPage({ onRequireAuth }: Props) {
           />
         </div>
 
-        {availableDates.length > 0 && (
-          <div className="events__dates">
-            <button
-              className={`events__date${selectedDate === 'all' ? ' events__date--active' : ''}`}
-              type="button"
-              onClick={() => setSelectedDate('all')}
-            >
-              Все даты
-            </button>
-            {availableDates.map((date) => (
-              <button
-                className={`events__date${selectedDate === date.key ? ' events__date--active' : ''}`}
-                key={date.key}
-                type="button"
-                onClick={() => setSelectedDate(date.key)}
-              >
-                {date.label}
-              </button>
-            ))}
-          </div>
+        {monthOptions.length > 0 && (
+          <>
+            <div className="events__months">
+              {monthOptions.map((month) => (
+                <button
+                  className={`events__month${selectedMonthKey === month.key ? ' events__month--active' : ''}`}
+                  key={month.key}
+                  type="button"
+                  onClick={() => {
+                    setSelectedMonthKey(month.key)
+                    const firstEventDay = safeItems
+                      .map((event) => toLocalParts(event.startAt))
+                      .find((parts) => parts.year === month.year && parts.month === month.month)?.day
+                    setSelectedDay(firstEventDay || 1)
+                  }}
+                >
+                  {month.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="events__days">
+              {days.map((day) => (
+                <button
+                  className={`events__day${selectedDay === day ? ' events__day--active' : ''}`}
+                  key={day}
+                  type="button"
+                  onClick={() => setSelectedDay(day)}
+                >
+                  {day}
+                </button>
+              ))}
+            </div>
+          </>
         )}
 
         {safeCategories.length > 0 && (
@@ -187,11 +254,11 @@ function EventsPage({ onRequireAuth }: Props) {
           </div>
         )}
 
-        <div className="events__panel-title">Ближайшие события</div>
+        <div className="events__panel-title">События на выбранную дату</div>
         {(state.status === 'idle' || state.status === 'loading') && <div className="events__status">Загружаем афишу...</div>}
         {state.status === 'error' && <div className="events__status events__status--error">{state.error}</div>}
         {state.status === 'success' && filteredItems.length === 0 && (
-          <div className="events__status">На выбранную дату и категорию событий пока нет.</div>
+          <div className="events__status">Событий на эту дату нет.</div>
         )}
 
         <div className="events__grid">

@@ -220,14 +220,14 @@
   margin-bottom: 16px;
 }
 
-.events__dates {
+.events__months {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
   margin-bottom: 14px;
 }
 
-.events__date {
+.events__month {
   border: 1px solid var(--line);
   background: rgba(var(--accent-rgb), 0.06);
   color: var(--ink);
@@ -238,15 +238,46 @@
   transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
-.events__date:hover {
+.events__month:hover {
   background: rgba(var(--accent-rgb), 0.12);
   border-color: rgba(var(--accent-rgb), 0.4);
   transform: translateY(-1px);
 }
 
-.events__date--active {
+.events__month--active {
   background: rgba(var(--accent-rgb), 0.22);
   border-color: rgba(var(--accent-rgb), 0.46);
+  color: var(--accent);
+}
+
+.events__days {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.events__day {
+  min-width: 38px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  padding: 7px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.events__day:hover {
+  background: rgba(var(--accent-rgb), 0.1);
+  border-color: rgba(var(--accent-rgb), 0.35);
+  transform: translateY(-1px);
+}
+
+.events__day--active {
+  background: rgba(var(--accent-rgb), 0.2);
+  border-color: rgba(var(--accent-rgb), 0.45);
   color: var(--accent);
 }
 
