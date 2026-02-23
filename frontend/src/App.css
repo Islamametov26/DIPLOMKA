@@ -557,6 +557,27 @@
   justify-content: start;
 }
 
+.events__more-wrap {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.events__more {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.events__more:hover {
+  border-color: rgba(var(--accent-rgb), 0.4);
+  background: rgba(var(--accent-rgb), 0.08);
+}
+
 .event-card {
   padding: 0 22px 20px;
   border-radius: 20px;
@@ -1404,6 +1425,8 @@
 }
 
 .event-page__trailer-wrap {
+  width: min(100%, 860px);
+  justify-self: start;
   border-radius: 14px;
   overflow: hidden;
   border: 1px solid var(--line);

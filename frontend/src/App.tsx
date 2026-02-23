@@ -66,7 +66,9 @@ function App() {
   return (
     <div className="app">
       <header className="app__header">
-        <div className="app__brand">AFISHA AIA</div>
+        <a className="app__brand" href="/" onClick={handleNavLink('/')}>
+          AFISHA AIA
+        </a>
         <nav className="app__nav" aria-label="Primary" />
         <div className="app__actions">
           <div className="app__nav">

@@ -68,6 +68,7 @@ function toHumanDate(key: string) {
 }
 
 function EventsPage({ onOpenEvent }: Props) {
+  const PAGE_SIZE = 9
   const [state, setState] = useState<EventsState>(emptyState)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all')
   const [selectedDateKey, setSelectedDateKey] = useState<string>('')
@@ -85,6 +86,7 @@ function EventsPage({ onOpenEvent }: Props) {
     return 9
   })
   const [query, setQuery] = useState('')
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const popularRef = useRef<HTMLDivElement | null>(null)
 
   const safeItems = Array.isArray(state.items) ? state.items : []
@@ -231,6 +233,13 @@ function EventsPage({ onOpenEvent }: Props) {
       return `${event.title} ${event.description}`.toLowerCase().includes(normalizedQuery)
     })
   }, [query, safeItems, selectedCategoryId, selectedDateKey])
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE)
+  }, [query, selectedCategoryId, selectedDateKey])
+
+  const visibleItems = useMemo(() => filteredItems.slice(0, visibleCount), [filteredItems, visibleCount])
+  const canShowMore = visibleCount < filteredItems.length
 
   const popularItems = useMemo(() => {
     const published = safeItems.filter((item) => item.published)
@@ -414,8 +423,8 @@ function EventsPage({ onOpenEvent }: Props) {
           <div className="events__status">{selectedDateKey ? 'Событий на эту дату нет.' : 'Событий по текущему фильтру нет.'}</div>
         )}
 
-        <div className={`events__grid${filteredItems.length === 1 ? ' events__grid--compact' : ''}`}>
-          {filteredItems.map((event) => (
+        <div className={`events__grid${visibleItems.length === 1 ? ' events__grid--compact' : ''}`}>
+          {visibleItems.map((event) => (
             <EventCard
               key={event.id}
               event={event}
@@ -424,6 +433,14 @@ function EventsPage({ onOpenEvent }: Props) {
             />
           ))}
         </div>
+
+        {canShowMore && (
+          <div className="events__more-wrap">
+            <button className="events__more" type="button" onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}>
+              Показать еще
+            </button>
+          </div>
+        )}
       </div>
     </section>
   )
