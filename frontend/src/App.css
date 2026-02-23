@@ -834,6 +834,7 @@
   border: 1px solid var(--line);
   display: grid;
   gap: 20px;
+  box-shadow: 0 18px 34px rgba(23, 12, 6, 0.07);
 }
 
 .admin__header {
@@ -861,6 +862,47 @@
   align-items: center;
 }
 
+.admin__summary {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin__summary span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  background: rgba(var(--accent-rgb), 0.05);
+}
+
+.admin__workspace {
+  display: grid;
+  grid-template-columns: minmax(300px, 430px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.admin__sidebar {
+  display: grid;
+  gap: 12px;
+  position: sticky;
+  top: 92px;
+  max-height: calc(100vh - 120px);
+  align-content: start;
+}
+
+.admin__search {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  padding: 9px 12px;
+  font: inherit;
+}
+
 .admin__select {
   display: grid;
   gap: 6px;
@@ -885,6 +927,10 @@
 .admin__form {
   display: grid;
   gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px;
+  background: rgba(var(--accent-rgb), 0.03);
 }
 
 .admin__form-title {
@@ -959,6 +1005,9 @@
 .admin__list {
   display: grid;
   gap: 10px;
+  max-height: calc(100vh - 190px);
+  overflow: auto;
+  padding-right: 4px;
 }
 
 .admin-item {
@@ -1779,6 +1828,19 @@
 
   .admin-item__actions {
     width: 100%;
+  }
+
+  .admin__workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .admin__sidebar {
+    position: static;
+    max-height: none;
+  }
+
+  .admin__list {
+    max-height: none;
   }
 
   .seats {

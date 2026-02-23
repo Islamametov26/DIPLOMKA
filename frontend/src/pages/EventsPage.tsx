@@ -7,6 +7,7 @@ import { useLocale } from '../context/LocaleContext'
 import type { Category } from '../types/category'
 import type { Event } from '../types/event'
 import type { Venue } from '../types/venue'
+import { cleanText } from '../utils/text'
 
 const emptyState = {
   status: 'loading' as const,
@@ -40,6 +41,13 @@ function toDateKey(value: Date | string) {
   const m = String(date.getMonth() + 1).padStart(2, '0')
   const d = String(date.getDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
+}
+
+function normalizeSearchText(value: string) {
+  return value
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
 }
 
 function parseKey(key: string) {
@@ -219,8 +227,17 @@ function EventsPage({ onOpenEvent }: Props) {
     return `${first.monthLabel} - ${last.monthLabel}`
   }, [visibleDays])
 
+  const venueById = useMemo(
+    () =>
+      safeVenues.reduce<Record<string, Venue>>((acc, venue) => {
+        acc[venue.id] = venue
+        return acc
+      }, {}),
+    [safeVenues],
+  )
+
   const filteredItems = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase()
+    const normalizedQuery = normalizeSearchText(query.trim())
 
     return safeItems.filter((event) => {
       if (selectedDateKey && toDateKey(event.startAt) !== selectedDateKey) {
@@ -232,9 +249,16 @@ function EventsPage({ onOpenEvent }: Props) {
       if (!normalizedQuery) {
         return true
       }
-      return `${event.title} ${event.description}`.toLowerCase().includes(normalizedQuery)
+
+      const eventTitle = cleanText(event.title, '')
+      const eventDescription = cleanText(event.description, '')
+      const eventVenue = cleanText(venueById[event.venueId]?.name, '')
+      const eventCategory = cleanText(safeCategories.find((item) => item.id === event.categoryId)?.name, '')
+      const searchable = normalizeSearchText(`${eventTitle} ${eventDescription} ${eventVenue} ${eventCategory}`)
+
+      return searchable.includes(normalizedQuery)
     })
-  }, [query, safeItems, selectedCategoryId, selectedDateKey])
+  }, [query, safeItems, selectedCategoryId, selectedDateKey, safeCategories, venueById])
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE)
@@ -250,15 +274,6 @@ function EventsPage({ onOpenEvent }: Props) {
       .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
       .slice(0, 12)
   }, [safeItems])
-
-  const venueById = useMemo(
-    () =>
-      safeVenues.reduce<Record<string, Venue>>((acc, venue) => {
-        acc[venue.id] = venue
-        return acc
-      }, {}),
-    [safeVenues],
-  )
 
   const slidePopular = (direction: 'left' | 'right') => {
     const node = popularRef.current
