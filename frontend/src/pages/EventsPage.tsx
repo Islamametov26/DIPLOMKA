@@ -49,6 +49,10 @@ function daysInMonth(year: number, month: number) {
   return new Date(year, month, 0).getDate()
 }
 
+function dayWeekLabel(year: number, month: number, day: number) {
+  return new Date(year, month - 1, day).toLocaleDateString('ru-RU', { weekday: 'short' })
+}
+
 function EventsPage({ onRequireAuth }: Props) {
   const [state, setState] = useState<EventsState>(emptyState)
   const [activeEvent, setActiveEvent] = useState<Event | null>(null)
@@ -134,6 +138,20 @@ function EventsPage({ onRequireAuth }: Props) {
     return Array.from({ length: total }, (_, i) => i + 1)
   }, [selectedMonth])
 
+  const monthEventDays = useMemo(() => {
+    if (!selectedMonth) {
+      return new Set<number>()
+    }
+    const set = new Set<number>()
+    for (const event of safeItems) {
+      const parts = toLocalParts(event.startAt)
+      if (parts.year === selectedMonth.year && parts.month === selectedMonth.month) {
+        set.add(parts.day)
+      }
+    }
+    return set
+  }, [safeItems, selectedMonth])
+
   const filteredItems = useMemo(() => {
     if (!selectedMonth) {
       return [] as Event[]
@@ -196,42 +214,6 @@ function EventsPage({ onRequireAuth }: Props) {
           />
         </div>
 
-        {monthOptions.length > 0 && (
-          <>
-            <div className="events__months">
-              {monthOptions.map((month) => (
-                <button
-                  className={`events__month${selectedMonthKey === month.key ? ' events__month--active' : ''}`}
-                  key={month.key}
-                  type="button"
-                  onClick={() => {
-                    setSelectedMonthKey(month.key)
-                    const firstEventDay = safeItems
-                      .map((event) => toLocalParts(event.startAt))
-                      .find((parts) => parts.year === month.year && parts.month === month.month)?.day
-                    setSelectedDay(firstEventDay || 1)
-                  }}
-                >
-                  {month.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="events__days">
-              {days.map((day) => (
-                <button
-                  className={`events__day${selectedDay === day ? ' events__day--active' : ''}`}
-                  key={day}
-                  type="button"
-                  onClick={() => setSelectedDay(day)}
-                >
-                  {day}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-
         {safeCategories.length > 0 && (
           <div className="events__filters">
             <button
@@ -251,6 +233,52 @@ function EventsPage({ onRequireAuth }: Props) {
                 {category.name}
               </button>
             ))}
+          </div>
+        )}
+
+        {monthOptions.length > 0 && (
+          <div className="events__datebar">
+            <div className="events__month-select">
+              <span>Месяц:</span>
+              <select
+                value={selectedMonthKey}
+                onChange={(event) => {
+                  const nextKey = event.target.value
+                  setSelectedMonthKey(nextKey)
+                  const month = monthOptions.find((item) => item.key === nextKey)
+                  if (!month) {
+                    return
+                  }
+                  const firstEventDay = safeItems
+                    .map((item) => toLocalParts(item.startAt))
+                    .find((parts) => parts.year === month.year && parts.month === month.month)?.day
+                  setSelectedDay(firstEventDay || 1)
+                }}
+              >
+                {monthOptions.map((month) => (
+                  <option key={month.key} value={month.key}>
+                    {month.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="events__days">
+              {days.map((day) => {
+                const hasEvents = monthEventDays.has(day)
+                return (
+                  <button
+                    className={`events__day${selectedDay === day ? ' events__day--active' : ''}${!hasEvents ? ' events__day--empty' : ''}`}
+                    key={day}
+                    type="button"
+                    onClick={() => setSelectedDay(day)}
+                  >
+                    <span className="events__day-week">{dayWeekLabel(selectedMonth!.year, selectedMonth!.month, day)}</span>
+                    <span className="events__day-number">{day}</span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         )}
 
