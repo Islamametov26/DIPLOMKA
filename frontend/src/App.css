@@ -502,7 +502,6 @@
 }
 
 .event-card {
-  position: relative;
   padding: 0 22px 20px;
   border-radius: 20px;
   background: var(--surface);
@@ -518,7 +517,7 @@
   display: block;
   width: 100%;
   margin: 0;
-  height: 180px;
+  height: 240px;
   object-fit: cover;
   object-position: center;
   border: 1px solid var(--line);
@@ -534,20 +533,12 @@
 
 .event-card__header {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: flex-end;
   align-items: center;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.15em;
   color: var(--muted);
-}
-
-.event-card__tag {
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(var(--accent-rgb), 0.15);
-  color: var(--accent);
 }
 
 .event-card__title {
@@ -568,6 +559,12 @@
   align-items: center;
 }
 
+.event-card__actions {
+  min-height: 42px;
+  display: flex;
+  align-items: flex-end;
+}
+
 .event-card__meta {
   font-size: 0.85rem;
   color: var(--muted);
@@ -582,10 +579,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-  position: absolute;
-  left: 50%;
-  bottom: 16px;
-  transform: translate(-50%, 10px);
+  transform: translateY(10px);
   opacity: 0;
   pointer-events: none;
   box-shadow: 0 10px 22px rgba(var(--accent-rgb), 0.32);
@@ -595,7 +589,7 @@
 .event-card:focus-within .event-card__hover-action {
   opacity: 1;
   pointer-events: auto;
-  transform: translate(-50%, 0);
+  transform: translateY(0);
 }
 
 .event-card__hover-action:hover {
