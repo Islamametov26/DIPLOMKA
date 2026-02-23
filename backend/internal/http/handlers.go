@@ -69,6 +69,8 @@ type eventPayload struct {
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	ImageURL    string    `json:"imageUrl"`
+	TrailerURL  string    `json:"trailerUrl"`
+	GalleryURLs []string  `json:"galleryUrls"`
 	StartAt     string    `json:"startAt"`
 	EndAt       string    `json:"endAt"`
 	VenueID     uuid.UUID `json:"venueId"`
@@ -321,11 +323,31 @@ func parseEventPayload(payload eventPayload) (domain.Event, bool) {
 		return domain.Event{}, false
 	}
 	imageURL := strings.TrimSpace(payload.ImageURL)
+	trailerURL := strings.TrimSpace(payload.TrailerURL)
 	if imageURL != "" {
 		parsed, err := url.ParseRequestURI(imageURL)
 		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") {
 			return domain.Event{}, false
 		}
+	}
+	if trailerURL != "" {
+		parsed, err := url.ParseRequestURI(trailerURL)
+		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+			return domain.Event{}, false
+		}
+	}
+
+	galleryURLs := make([]string, 0, len(payload.GalleryURLs))
+	for _, raw := range payload.GalleryURLs {
+		item := strings.TrimSpace(raw)
+		if item == "" {
+			continue
+		}
+		parsed, err := url.ParseRequestURI(item)
+		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+			return domain.Event{}, false
+		}
+		galleryURLs = append(galleryURLs, item)
 	}
 
 	startAt, err := time.Parse(time.RFC3339, payload.StartAt)
@@ -341,6 +363,8 @@ func parseEventPayload(payload eventPayload) (domain.Event, bool) {
 		Title:       payload.Title,
 		Description: payload.Description,
 		ImageURL:    imageURL,
+		TrailerURL:  trailerURL,
+		GalleryURLs: galleryURLs,
 		StartAt:     startAt.UTC(),
 		EndAt:       endAt.UTC(),
 		VenueID:     payload.VenueID,

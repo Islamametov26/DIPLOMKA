@@ -32,18 +32,19 @@ const initialState: PageState = {
   error: null,
 }
 
-function getYoutubeEmbedUrl(text: string) {
-  const source = text || ''
-  const directMatch = source.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/i)
-  if (!directMatch) {
+function getYoutubeEmbedUrl(rawUrl: string) {
+  const source = (rawUrl || '').trim()
+  const match = source.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/i)
+  if (!match) {
     return ''
   }
-  return `https://www.youtube-nocookie.com/embed/${directMatch[1]}`
+  return `https://www.youtube-nocookie.com/embed/${match[1]}`
 }
 
 function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
   const { user } = useAuth()
   const [state, setState] = useState<PageState>(initialState)
+  const [buyOpen, setBuyOpen] = useState(false)
   const [selectedSeats, setSelectedSeats] = useState<string[]>([])
   const [reservedSeats, setReservedSeats] = useState<string[]>([])
   const [bookingStatus, setBookingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
@@ -79,8 +80,7 @@ function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
   const category = useMemo(() => state.categories.find((item) => item.id === event?.categoryId), [state.categories, event?.categoryId])
 
   useEffect(() => {
-    if (!event) {
-      setReservedSeats([])
+    if (!buyOpen || !event) {
       return
     }
     let active = true
@@ -100,7 +100,21 @@ function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
     return () => {
       active = false
     }
-  }, [event])
+  }, [buyOpen, event])
+
+  const openBuyPopup = () => {
+    setBookingStatus('idle')
+    setBookingError(null)
+    setSelectedSeats([])
+    setBuyOpen(true)
+  }
+
+  const closeBuyPopup = () => {
+    if (bookingStatus === 'loading') {
+      return
+    }
+    setBuyOpen(false)
+  }
 
   const handleBooking = async () => {
     if (!event) {
@@ -119,9 +133,9 @@ function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
     setBookingError(null)
     try {
       await createBooking(event.id, selectedSeats)
-      setBookingStatus('success')
       const seats = await listOccupiedSeats(event.id)
       setReservedSeats(seats)
+      setBookingStatus('success')
       setSelectedSeats([])
     } catch (error) {
       const message = error instanceof Error ? error.message.toLowerCase() : ''
@@ -141,13 +155,21 @@ function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
   const safeCategoryName = cleanText(category?.name, 'Без категории')
   const normalizedCategory = safeCategoryName.toLowerCase()
   const isMovie = normalizedCategory.includes('фильм') || normalizedCategory.includes('кино')
-  const trailerEmbed = getYoutubeEmbedUrl(safeDescription)
+  const safeTrailerUrl = cleanText(event?.trailerUrl, '')
+  const trailerEmbed = getYoutubeEmbedUrl(safeTrailerUrl)
+  const galleryImages = useMemo(() => {
+    if (!event) {
+      return []
+    }
+    const extra = Array.isArray(event.galleryUrls) ? event.galleryUrls.filter(Boolean) : []
+    return extra.slice(0, 8)
+  }, [event])
   const total = selectedSeats.length * seatPrice
 
   return (
     <section className="event-page">
       <button className="event-page__back" type="button" onClick={onBack}>
-        ← Назад к афише
+        Назад к афише
       </button>
 
       {state.status === 'loading' && <div className="events__status">Загружаем полную информацию о событии...</div>}
@@ -155,88 +177,108 @@ function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
       {state.status === 'success' && !event && <div className="events__status events__status--error">Событие не найдено.</div>}
 
       {state.status === 'success' && event && (
-        <div className="event-page__layout">
-          <article className="event-page__main">
-            {event.imageUrl ? (
-              <img className="event-page__hero" src={event.imageUrl} alt={safeTitle} loading="lazy" />
-            ) : (
-              <div className="event-page__hero event-page__hero--placeholder" aria-hidden="true" />
-            )}
+        <>
+          <div className="event-page__layout">
+            <aside className="event-page__poster">
+              {event.imageUrl ? (
+                <img className="event-page__poster-image" src={event.imageUrl} alt={safeTitle} loading="lazy" />
+              ) : (
+                <div className="event-page__poster-image event-page__hero--placeholder" aria-hidden="true" />
+              )}
+              <button className="event-page__buy" type="button" onClick={openBuyPopup}>
+                Купить билет
+              </button>
+            </aside>
 
-            <p className="event-page__eyebrow">{safeCategoryName}</p>
-            <h1 className="event-page__title">{safeTitle}</h1>
-            <p className="event-page__description">{safeDescription}</p>
+            <article className="event-page__main">
+              <p className="event-page__eyebrow">{safeCategoryName}</p>
+              <h1 className="event-page__title">{safeTitle}</h1>
+              <p className="event-page__description">{safeDescription}</p>
 
-            <div className="event-page__meta">
-              <span>Начало: {new Date(event.startAt).toLocaleString('ru-RU')}</span>
-              <span>Окончание: {new Date(event.endAt).toLocaleString('ru-RU')}</span>
-              <span>Площадка: {safeVenueName}</span>
-              <span>Адрес: {safeVenueAddress}</span>
+              <div className="event-page__meta">
+                <span>Начало: {new Date(event.startAt).toLocaleString('ru-RU')}</span>
+                <span>Окончание: {new Date(event.endAt).toLocaleString('ru-RU')}</span>
+                <span>Площадка: {safeVenueName}</span>
+                <span>Адрес: {safeVenueAddress}</span>
+              </div>
+            </article>
+          </div>
+
+          {isMovie && (
+            <section className="event-page__media" aria-label="Трейлер и кадры">
+              <h2 className="event-page__section-title">Трейлер и кадры из фильма</h2>
+              {trailerEmbed ? (
+                <div className="event-page__trailer-wrap">
+                  <iframe
+                    className="event-page__trailer"
+                    src={trailerEmbed}
+                    title={`Трейлер: ${safeTitle}`}
+                    loading="lazy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    allowFullScreen
+                  />
+                </div>
+              ) : safeTrailerUrl ? (
+                <div className="event-page__trailer-placeholder">
+                  <span>Ссылка на трейлер указана, но не распознана как YouTube:</span>
+                  <a href={safeTrailerUrl} target="_blank" rel="noreferrer">
+                    Открыть трейлер
+                  </a>
+                </div>
+              ) : (
+                <div className="event-page__trailer-placeholder">Трейлер для этого фильма пока не добавлен.</div>
+              )}
+
+              {galleryImages.length > 0 ? (
+                <div className="event-page__frames">
+                  {galleryImages.map((imageUrl, index) => (
+                    <img
+                      className="event-page__frame"
+                      key={`frame-${index}-${imageUrl}`}
+                      src={imageUrl}
+                      alt={`Кадр ${index + 1}: ${safeTitle}`}
+                      loading="lazy"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="event-page__trailer-placeholder">Кадры из фильма пока не добавлены.</div>
+              )}
+            </section>
+          )}
+        </>
+      )}
+
+      {buyOpen && event && (
+        <div className="modal" role="dialog" aria-modal="true" aria-label="Выбор мест">
+          <button className="modal__overlay" type="button" onClick={closeBuyPopup} />
+          <div className="modal__content" role="document">
+            <div className="modal__header">
+              <div>
+                <p className="modal__eyebrow">Покупка билетов</p>
+                <h2 className="modal__title">{safeTitle}</h2>
+              </div>
+              <button className="modal__close" type="button" onClick={closeBuyPopup}>
+                Закрыть
+              </button>
             </div>
 
-            {isMovie && (
-              <section className="event-page__media" aria-label="Медиа">
-                <h2 className="event-page__section-title">Трейлер и кадры</h2>
-                {trailerEmbed ? (
-                  <div className="event-page__trailer-wrap">
-                    <iframe
-                      className="event-page__trailer"
-                      src={trailerEmbed}
-                      title={`Трейлер: ${safeTitle}`}
-                      loading="lazy"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      referrerPolicy="strict-origin-when-cross-origin"
-                      allowFullScreen
-                    />
-                  </div>
-                ) : (
-                  <div className="event-page__trailer-placeholder">
-                    <span>Трейлер не прикреплен. Откройте поиск трейлера:</span>
-                    <a
-                      href={`https://www.youtube.com/results?search_query=${encodeURIComponent(`${safeTitle} трейлер`)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Смотреть трейлер на YouTube
-                    </a>
-                  </div>
-                )}
-
-                {event.imageUrl && (
-                  <div className="event-page__frames">
-                    {[20, 38, 56, 74].map((position, index) => (
-                      <img
-                        className="event-page__frame"
-                        key={`frame-${index}`}
-                        src={event.imageUrl}
-                        alt={`Кадр ${index + 1}: ${safeTitle}`}
-                        style={{ objectPosition: `50% ${position}%` }}
-                        loading="lazy"
-                      />
-                    ))}
-                  </div>
-                )}
-              </section>
-            )}
-          </article>
-
-          <aside className="event-page__booking">
-            <h2 className="event-page__section-title">Купить билет</h2>
             <SeatPicker selected={selectedSeats} reserved={reservedSeats} onChange={setSelectedSeats} />
 
-            <div className="event-page__summary">
+            <div className="modal__booking">
               <div>
-                <div className="event-page__summary-label">Итого</div>
-                <div className="event-page__summary-value">{total} KZT</div>
+                <div className="modal__booking-label">Итого</div>
+                <div className="modal__booking-price">{total} KZT</div>
               </div>
-              <button className="event-page__buy" type="button" onClick={handleBooking} disabled={bookingStatus === 'loading'}>
+              <button className="modal__primary" type="button" onClick={handleBooking} disabled={bookingStatus === 'loading'}>
                 {bookingStatus === 'loading' ? 'Покупаем...' : 'Купить билеты'}
               </button>
             </div>
 
-            {bookingStatus === 'success' && <div className="events__status">Покупка успешна! Билеты оформлены.</div>}
-            {bookingError && <div className="events__status events__status--error">{bookingError}</div>}
-          </aside>
+            {bookingStatus === 'success' && <div className="modal__status">Покупка успешна! Билеты оформлены.</div>}
+            {bookingError && <div className="modal__status modal__status--error">{bookingError}</div>}
+          </div>
         </div>
       )}
     </section>

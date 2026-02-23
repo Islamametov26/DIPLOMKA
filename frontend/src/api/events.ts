@@ -14,6 +14,8 @@ type EventPayload = {
   title: string
   description: string
   imageUrl: string
+  trailerUrl: string
+  galleryUrls: string[]
   startAt: string
   endAt: string
   venueId: string

@@ -11,6 +11,8 @@ type Event struct {
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	ImageURL    string    `json:"imageUrl"`
+	TrailerURL  string    `json:"trailerUrl"`
+	GalleryURLs []string  `json:"galleryUrls"`
 	StartAt     time.Time `json:"startAt"`
 	EndAt       time.Time `json:"endAt"`
 	VenueID     uuid.UUID `json:"venueId"`

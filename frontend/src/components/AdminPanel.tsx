@@ -16,6 +16,8 @@ const emptyForm = {
   title: '',
   description: '',
   imageUrl: '',
+  trailerUrl: '',
+  galleryUrls: '',
   startAt: '',
   endAt: '',
   venueId: '',
@@ -95,6 +97,8 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
       title: cleanText(event.title, ''),
       description: cleanText(event.description, ''),
       imageUrl: event.imageUrl || '',
+      trailerUrl: event.trailerUrl || '',
+      galleryUrls: Array.isArray(event.galleryUrls) ? event.galleryUrls.join('\n') : '',
       startAt: toDateTimeLocal(event.startAt),
       endAt: toDateTimeLocal(event.endAt),
       venueId: event.venueId,
@@ -130,6 +134,11 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
       title: form.title.trim(),
       description: form.description.trim(),
       imageUrl: form.imageUrl.trim(),
+      trailerUrl: form.trailerUrl.trim(),
+      galleryUrls: form.galleryUrls
+        .split('\n')
+        .map((item) => item.trim())
+        .filter(Boolean),
       startAt: new Date(form.startAt).toISOString(),
       endAt: new Date(form.endAt).toISOString(),
       venueId: form.venueId.trim(),
@@ -261,6 +270,26 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
         </label>
 
         {form.imageUrl && <img className="admin__preview" src={form.imageUrl} alt="Превью события" loading="lazy" />}
+
+        <label>
+          Ссылка на трейлер (URL)
+          <input
+            type="url"
+            placeholder="https://youtube.com/watch?v=..."
+            value={form.trailerUrl}
+            onChange={(event) => handleChange('trailerUrl', event.target.value)}
+          />
+        </label>
+
+        <label>
+          Доп. картинки (каждая ссылка с новой строки)
+          <textarea
+            value={form.galleryUrls}
+            onChange={(event) => handleChange('galleryUrls', event.target.value)}
+            rows={4}
+            placeholder={`https://...\nhttps://...`}
+          />
+        </label>
 
         <div className="admin__grid">
           <label>

@@ -1,0 +1,3 @@
+ALTER TABLE events
+ADD COLUMN IF NOT EXISTS trailer_url text NOT NULL DEFAULT '',
+ADD COLUMN IF NOT EXISTS gallery_urls text[] NOT NULL DEFAULT '{}';
