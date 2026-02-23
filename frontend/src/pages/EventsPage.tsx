@@ -88,6 +88,8 @@ function EventsPage({ onRequireAuth }: Props) {
   })
   const [query, setQuery] = useState('')
   const popularRef = useRef<HTMLDivElement | null>(null)
+  const daySlideTimerRef = useRef<number | null>(null)
+  const [daySlideDirection, setDaySlideDirection] = useState<'left' | 'right' | ''>('')
 
   const safeItems = Array.isArray(state.items) ? state.items : []
   const safeCategories = Array.isArray(state.categories) ? state.categories : []
@@ -188,6 +190,17 @@ function EventsPage({ onRequireAuth }: Props) {
   const canSlideDaysLeft = dayWindowStart > 0
   const canSlideDaysRight = dayWindowStart + visibleDayCount < calendarDays.length
 
+  const slideDays = (direction: 'left' | 'right') => {
+    const delta = direction === 'right' ? visibleDayCount : -visibleDayCount
+    const maxStart = Math.max(0, calendarDays.length - visibleDayCount)
+    setDayWindowStart((prev) => Math.min(maxStart, Math.max(0, prev + delta)))
+    setDaySlideDirection(direction)
+    if (daySlideTimerRef.current) {
+      window.clearTimeout(daySlideTimerRef.current)
+    }
+    daySlideTimerRef.current = window.setTimeout(() => setDaySlideDirection(''), 260)
+  }
+
   useEffect(() => {
     if (calendarDays.length === 0) {
       setSelectedDateKey('')
@@ -204,6 +217,15 @@ function EventsPage({ onRequireAuth }: Props) {
       setDayWindowStart(maxStart)
     }
   }, [calendarDays, dayWindowStart, selectedDateKey, visibleDayCount])
+
+  useEffect(
+    () => () => {
+      if (daySlideTimerRef.current) {
+        window.clearTimeout(daySlideTimerRef.current)
+      }
+    },
+    [],
+  )
 
   const currentMonthCaption = useMemo(() => {
     if (visibleDays.length === 0) {
@@ -358,11 +380,13 @@ function EventsPage({ onRequireAuth }: Props) {
                 </button>
               </div>
             )}
-            <div className="events__days">
+            <div
+              className={`events__days${daySlideDirection === 'left' ? ' events__days--slide-left' : ''}${daySlideDirection === 'right' ? ' events__days--slide-right' : ''}`}
+            >
               <button
                 className="events__day-arrow"
                 type="button"
-                onClick={() => setDayWindowStart((prev) => Math.max(0, prev - visibleDayCount))}
+                onClick={() => slideDays('left')}
                 disabled={!canSlideDaysLeft}
                 aria-label="Предыдущие даты"
               >
@@ -383,9 +407,7 @@ function EventsPage({ onRequireAuth }: Props) {
               <button
                 className="events__day-arrow"
                 type="button"
-                onClick={() =>
-                  setDayWindowStart((prev) => Math.min(Math.max(0, calendarDays.length - visibleDayCount), prev + visibleDayCount))
-                }
+                onClick={() => slideDays('right')}
                 disabled={!canSlideDaysRight}
                 aria-label="Следующие даты"
               >
@@ -402,7 +424,7 @@ function EventsPage({ onRequireAuth }: Props) {
           <div className="events__status">{selectedDateKey ? 'Событий на эту дату нет.' : 'Событий по текущему фильтру нет.'}</div>
         )}
 
-        <div className="events__grid">
+        <div className={`events__grid${filteredItems.length === 1 ? ' events__grid--compact' : ''}`}>
           {filteredItems.map((event) => (
             <EventCard
               key={event.id}
