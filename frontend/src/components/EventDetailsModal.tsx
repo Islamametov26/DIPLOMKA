@@ -1,6 +1,10 @@
-﻿import { useEffect } from 'react'
+﻿import { useEffect, useState } from 'react'
+import { createBooking } from '../api/bookings'
+import { listOccupiedSeats } from '../api/events'
+import { useAuth } from '../context/AuthContext'
 import type { Event } from '../types/event'
 import { cleanText } from '../utils/text'
+import SeatPicker from './SeatPicker'
 
 type Props = {
   event: Event
@@ -8,9 +12,17 @@ type Props = {
   venueAddress: string
   categoryName: string
   onClose: () => void
+  onRequireAuth: () => void
 }
 
-function EventDetailsModal({ event, venueName, venueAddress, categoryName, onClose }: Props) {
+function EventDetailsModal({ event, venueName, venueAddress, categoryName, onClose, onRequireAuth }: Props) {
+  const { user } = useAuth()
+  const seatPrice = 2500
+  const [selectedSeats, setSelectedSeats] = useState<string[]>([])
+  const [reservedSeats, setReservedSeats] = useState<string[]>([])
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [error, setError] = useState<string | null>(null)
+
   const safeTitle = cleanText(event.title, 'Событие')
   const safeDescription = cleanText(event.description, 'Описание события скоро появится.')
   const safeVenueName = cleanText(venueName, 'Неизвестно')
@@ -26,6 +38,57 @@ function EventDetailsModal({ event, venueName, venueAddress, categoryName, onClo
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
   }, [onClose])
+
+  useEffect(() => {
+    let active = true
+    const loadSeats = async () => {
+      try {
+        const seats = await listOccupiedSeats(event.id)
+        if (active) {
+          setReservedSeats(seats)
+        }
+      } catch {
+        if (active) {
+          setReservedSeats([])
+        }
+      }
+    }
+    loadSeats()
+    return () => {
+      active = false
+    }
+  }, [event.id])
+
+  const handleBooking = async () => {
+    if (!user) {
+      onRequireAuth()
+      return
+    }
+    if (selectedSeats.length === 0) {
+      setError('Выберите хотя бы одно место.')
+      setStatus('error')
+      return
+    }
+    setStatus('loading')
+    setError(null)
+    try {
+      await createBooking(event.id, selectedSeats)
+      setStatus('success')
+      const seats = await listOccupiedSeats(event.id)
+      setReservedSeats(seats)
+      setSelectedSeats([])
+    } catch (err) {
+      const message = err instanceof Error ? err.message : ''
+      if (message.includes('409') || message.toLowerCase().includes('conflict') || message.includes('already booked')) {
+        setError('Эти места уже заняты или уже куплены вами.')
+      } else {
+        setError('Не удалось оформить покупку билетов.')
+      }
+      setStatus('error')
+    }
+  }
+
+  const total = selectedSeats.length * seatPrice
 
   return (
     <div className="modal" role="dialog" aria-modal="true">
@@ -55,6 +118,21 @@ function EventDetailsModal({ event, venueName, venueAddress, categoryName, onClo
           <span>Площадка: {safeVenueName}</span>
           <span>Адрес: {safeVenueAddress}</span>
         </div>
+
+        <SeatPicker selected={selectedSeats} reserved={reservedSeats} onChange={setSelectedSeats} />
+
+        <div className="modal__booking">
+          <div>
+            <div className="modal__booking-label">Итого</div>
+            <div className="modal__booking-price">{total} KZT</div>
+          </div>
+          <button className="modal__primary" type="button" onClick={handleBooking}>
+            Купить билеты
+          </button>
+        </div>
+
+        {status === 'success' && <div className="modal__status">Покупка успешна! Билеты оформлены.</div>}
+        {error && <div className="modal__status modal__status--error">{error}</div>}
       </div>
     </div>
   )

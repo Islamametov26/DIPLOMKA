@@ -48,10 +48,12 @@ func main() {
 	venueRepo := postgres.NewVenueRepository(dbConn)
 	categoryRepo := postgres.NewCategoryRepository(dbConn)
 	userRepo := postgres.NewUserRepository(dbConn)
+	bookingRepo := postgres.NewBookingRepository(dbConn)
 
 	eventService := service.NewEventService(eventRepo, venueRepo, categoryRepo)
 	venueService := service.NewVenueService(venueRepo)
 	categoryService := service.NewCategoryService(categoryRepo)
+	bookingService := service.NewBookingService(bookingRepo, eventRepo)
 
 	ttl, err := time.ParseDuration(cfg.JWTTTL)
 	if err != nil {
@@ -63,7 +65,7 @@ func main() {
 		logger.Fatal("migration error", zap.Error(err))
 	}
 
-	router := httpapi.NewRouter(eventService, venueService, categoryService, authService)
+	router := httpapi.NewRouter(eventService, venueService, categoryService, authService, bookingService)
 
 	server := &http.Server{
 		Addr:         cfg.HTTPAddr,

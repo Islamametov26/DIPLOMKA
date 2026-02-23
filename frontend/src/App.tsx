@@ -100,7 +100,7 @@ function App() {
         ) : isVenues ? (
           <VenuesPage />
         ) : (
-          <EventsPage />
+          <EventsPage onRequireAuth={() => setAuthOpen(true)} />
         )}
       </main>
       {aboutOpen && (
