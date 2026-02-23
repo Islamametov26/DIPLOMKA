@@ -40,10 +40,10 @@ function EventCard({ event, venueName, onDetails }: Props) {
       <p className="event-card__description">{safeDescription}</p>
       <div className="event-card__footer">
         <span className="event-card__meta">Площадка: {safeVenue}</span>
-        <button className="event-card__button" type="button" onClick={() => onDetails(event)}>
-          Подробнее
-        </button>
       </div>
+      <button className="event-card__hover-action" type="button" onClick={() => onDetails(event)}>
+        Купить билет
+      </button>
     </article>
   )
 }

@@ -272,6 +272,15 @@
   gap: 10px;
   background: rgba(var(--accent-rgb), 0.03);
   scroll-snap-align: start;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.events__popular-card:hover,
+.events__popular-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(var(--accent-rgb), 0.4);
+  background: rgba(var(--accent-rgb), 0.08);
 }
 
 .events__popular-image {
@@ -297,17 +306,6 @@
 .events__popular-name {
   margin: 0;
   font-size: 1rem;
-}
-
-.events__popular-button {
-  justify-self: start;
-  border: none;
-  background: var(--accent);
-  color: #fff;
-  border-radius: 999px;
-  padding: 8px 12px;
-  font-weight: 600;
-  cursor: pointer;
 }
 
 .events__title {
@@ -504,6 +502,7 @@
 }
 
 .event-card {
+  position: relative;
   padding: 0 22px 20px;
   border-radius: 20px;
   background: var(--surface);
@@ -564,7 +563,7 @@
 
 .event-card__footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 12px;
   align-items: center;
 }
@@ -574,7 +573,7 @@
   color: var(--muted);
 }
 
-.event-card__button {
+.event-card__hover-action {
   border: none;
   background: var(--accent);
   color: #fff;
@@ -582,11 +581,24 @@
   border-radius: 999px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translate(-50%, 10px);
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 10px 22px rgba(var(--accent-rgb), 0.32);
 }
 
-.event-card__button:hover {
-  transform: translateY(-2px);
+.event-card:hover .event-card__hover-action,
+.event-card:focus-within .event-card__hover-action {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
+
+.event-card__hover-action:hover {
   box-shadow: 0 12px 20px rgba(231, 90, 45, 0.25);
 }
 
@@ -1477,6 +1489,14 @@
   .event-card__footer {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .event-card__hover-action {
+    position: static;
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+    margin-top: 4px;
   }
 
   .admin-item {

@@ -327,7 +327,19 @@ function EventsPage({ onRequireAuth }: Props) {
           </div>
           <div className="events__popular-track" ref={popularRef}>
             {popularItems.map((event) => (
-              <article className="events__popular-card" key={`popular-${event.id}`}>
+              <article
+                className="events__popular-card"
+                key={`popular-${event.id}`}
+                role="button"
+                tabIndex={0}
+                onClick={() => setActiveEvent(event)}
+                onKeyDown={(keyEvent) => {
+                  if (keyEvent.key === 'Enter' || keyEvent.key === ' ') {
+                    keyEvent.preventDefault()
+                    setActiveEvent(event)
+                  }
+                }}
+              >
                 {event.imageUrl ? (
                   <img className="events__popular-image" src={event.imageUrl} alt={event.title} loading="lazy" />
                 ) : (
@@ -335,9 +347,6 @@ function EventsPage({ onRequireAuth }: Props) {
                 )}
                 <div className="events__popular-meta">{new Date(event.startAt).toLocaleString('ru-RU')}</div>
                 <h3 className="events__popular-name">{event.title}</h3>
-                <button className="events__popular-button" type="button" onClick={() => setActiveEvent(event)}>
-                  Открыть
-                </button>
               </article>
             ))}
           </div>
