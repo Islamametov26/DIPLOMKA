@@ -230,21 +230,10 @@
   margin-bottom: 14px;
 }
 
-.events__month-select {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.events__month-caption {
   color: var(--muted);
-  font-size: 0.9rem;
-}
-
-.events__month-select select {
-  border: 1px solid var(--line);
-  background: rgba(var(--accent-rgb), 0.06);
-  color: var(--ink);
-  padding: 8px 12px;
-  border-radius: 10px;
-  font: inherit;
+  font-weight: 600;
+  text-transform: capitalize;
 }
 
 .events__days {
@@ -282,6 +271,13 @@
 
 .events__day--empty {
   opacity: 0.55;
+}
+
+.events__day-month {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  color: var(--muted);
+  line-height: 1;
 }
 
 .events__day-week {

@@ -22,43 +22,49 @@ type Props = {
   onRequireAuth: () => void
 }
 
-type MonthOption = {
+type CalendarDay = {
   key: string
   year: number
   month: number
-  label: string
+  day: number
+  weekLabel: string
+  monthLabel: string
+  monthShort: string
+  hasEvents: boolean
+  isMonthStart: boolean
 }
 
-function toLocalParts(value: string) {
+function toDateKey(value: Date | string) {
   const date = new Date(value)
-  return {
-    year: date.getFullYear(),
-    month: date.getMonth() + 1,
-    day: date.getDate(),
-  }
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
-function monthLabel(year: number, month: number) {
+function parseKey(key: string) {
+  const [y, m, d] = key.split('-').map((value) => Number(value))
+  return new Date(y, m - 1, d)
+}
+
+function toMonthLabel(year: number, month: number) {
   return new Date(year, month - 1, 1).toLocaleDateString('ru-RU', {
     month: 'long',
     year: 'numeric',
   })
 }
 
-function daysInMonth(year: number, month: number) {
-  return new Date(year, month, 0).getDate()
-}
-
-function dayWeekLabel(year: number, month: number, day: number) {
-  return new Date(year, month - 1, day).toLocaleDateString('ru-RU', { weekday: 'short' })
+function toMonthShort(year: number, month: number) {
+  return new Date(year, month - 1, 1).toLocaleDateString('ru-RU', {
+    month: 'short',
+  })
 }
 
 function EventsPage({ onRequireAuth }: Props) {
   const [state, setState] = useState<EventsState>(emptyState)
   const [activeEvent, setActiveEvent] = useState<Event | null>(null)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all')
-  const [selectedMonthKey, setSelectedMonthKey] = useState<string>('')
-  const [selectedDay, setSelectedDay] = useState<number>(1)
+  const [selectedDateKey, setSelectedDateKey] = useState<string>('')
   const [dayWindowStart, setDayWindowStart] = useState<number>(0)
   const [visibleDayCount, setVisibleDayCount] = useState<number>(() => {
     if (typeof window === 'undefined') {
@@ -103,95 +109,6 @@ function EventsPage({ onRequireAuth }: Props) {
     return () => controller.abort()
   }, [])
 
-  const monthOptions = useMemo<MonthOption[]>(() => {
-    const unique = new Map<string, MonthOption>()
-    for (const event of safeItems) {
-      const parts = toLocalParts(event.startAt)
-      const key = `${parts.year}-${String(parts.month).padStart(2, '0')}`
-      if (!unique.has(key)) {
-        unique.set(key, {
-          key,
-          year: parts.year,
-          month: parts.month,
-          label: monthLabel(parts.year, parts.month),
-        })
-      }
-    }
-    return [...unique.values()].sort((a, b) => a.key.localeCompare(b.key))
-  }, [safeItems])
-
-  useEffect(() => {
-    if (monthOptions.length === 0) {
-      setSelectedMonthKey('')
-      return
-    }
-
-    if (!selectedMonthKey || !monthOptions.some((item) => item.key === selectedMonthKey)) {
-      const fallback = monthOptions[0]
-      setSelectedMonthKey(fallback.key)
-
-      const firstDay = safeItems
-        .map((event) => toLocalParts(event.startAt))
-        .find((parts) => parts.year === fallback.year && parts.month === fallback.month)?.day
-
-      setSelectedDay(firstDay || 1)
-    }
-  }, [monthOptions, safeItems, selectedMonthKey])
-
-  const selectedMonth = useMemo(
-    () => monthOptions.find((item) => item.key === selectedMonthKey) || null,
-    [monthOptions, selectedMonthKey],
-  )
-
-  const days = useMemo(() => {
-    if (!selectedMonth) {
-      return [] as number[]
-    }
-    const total = daysInMonth(selectedMonth.year, selectedMonth.month)
-    return Array.from({ length: total }, (_, i) => i + 1)
-  }, [selectedMonth])
-
-  const visibleDays = useMemo(
-    () => days.slice(dayWindowStart, dayWindowStart + visibleDayCount),
-    [dayWindowStart, days],
-  )
-  const canSlideDaysLeft = dayWindowStart > 0
-  const canSlideDaysRight = dayWindowStart + visibleDayCount < days.length
-
-  const monthEventDays = useMemo(() => {
-    if (!selectedMonth) {
-      return new Set<number>()
-    }
-    const set = new Set<number>()
-    for (const event of safeItems) {
-      const parts = toLocalParts(event.startAt)
-      if (parts.year === selectedMonth.year && parts.month === selectedMonth.month) {
-        set.add(parts.day)
-      }
-    }
-    return set
-  }, [safeItems, selectedMonth])
-
-  useEffect(() => {
-    if (days.length === 0) {
-      setDayWindowStart(0)
-      return
-    }
-    const selectedIndex = Math.max(0, days.indexOf(selectedDay))
-    if (selectedIndex < dayWindowStart) {
-      setDayWindowStart(selectedIndex)
-      return
-    }
-    if (selectedIndex >= dayWindowStart + visibleDayCount) {
-      setDayWindowStart(Math.max(0, selectedIndex - visibleDayCount + 1))
-      return
-    }
-    const maxStart = Math.max(0, days.length - visibleDayCount)
-    if (dayWindowStart > maxStart) {
-      setDayWindowStart(maxStart)
-    }
-  }, [dayWindowStart, days, selectedDay, visibleDayCount])
-
   useEffect(() => {
     const updateVisibleCount = () => {
       if (window.innerWidth < 720) {
@@ -204,21 +121,124 @@ function EventsPage({ onRequireAuth }: Props) {
       }
       setVisibleDayCount(9)
     }
+
     updateVisibleCount()
     window.addEventListener('resize', updateVisibleCount)
     return () => window.removeEventListener('resize', updateVisibleCount)
   }, [])
 
+  const eventDateSet = useMemo(() => {
+    const set = new Set<string>()
+    for (const event of safeItems) {
+      set.add(toDateKey(event.startAt))
+    }
+    return set
+  }, [safeItems])
+
+  const calendarDays = useMemo<CalendarDay[]>(() => {
+    if (safeItems.length === 0) {
+      return []
+    }
+
+    const sortedKeys = [...eventDateSet].sort((a, b) => a.localeCompare(b))
+    const first = parseKey(sortedKeys[0])
+    const last = parseKey(sortedKeys[sortedKeys.length - 1])
+
+    const days: CalendarDay[] = []
+    let cursor = new Date(first.getFullYear(), first.getMonth(), first.getDate())
+    const end = new Date(last.getFullYear(), last.getMonth(), last.getDate())
+
+    while (cursor <= end) {
+      const year = cursor.getFullYear()
+      const month = cursor.getMonth() + 1
+      const day = cursor.getDate()
+      const key = toDateKey(cursor)
+      days.push({
+        key,
+        year,
+        month,
+        day,
+        weekLabel: cursor.toLocaleDateString('ru-RU', { weekday: 'short' }),
+        monthLabel: toMonthLabel(year, month),
+        monthShort: toMonthShort(year, month),
+        hasEvents: eventDateSet.has(key),
+        isMonthStart: day === 1,
+      })
+      cursor.setDate(cursor.getDate() + 1)
+    }
+
+    return days
+  }, [eventDateSet, safeItems.length])
+
+  const visibleDays = useMemo(
+    () => calendarDays.slice(dayWindowStart, dayWindowStart + visibleDayCount),
+    [calendarDays, dayWindowStart, visibleDayCount],
+  )
+
+  const canSlideDaysLeft = dayWindowStart > 0
+  const canSlideDaysRight = dayWindowStart + visibleDayCount < calendarDays.length
+
+  useEffect(() => {
+    if (calendarDays.length === 0) {
+      setSelectedDateKey('')
+      setDayWindowStart(0)
+      return
+    }
+
+    if (!selectedDateKey || !calendarDays.some((day) => day.key === selectedDateKey)) {
+      const firstEventDay = calendarDays.find((day) => day.hasEvents)
+      setSelectedDateKey(firstEventDay?.key || calendarDays[0].key)
+      setDayWindowStart(0)
+    }
+  }, [calendarDays, selectedDateKey])
+
+  useEffect(() => {
+    if (!selectedDateKey || calendarDays.length === 0) {
+      return
+    }
+
+    const selectedIndex = calendarDays.findIndex((day) => day.key === selectedDateKey)
+    if (selectedIndex === -1) {
+      return
+    }
+
+    if (selectedIndex < dayWindowStart) {
+      setDayWindowStart(selectedIndex)
+      return
+    }
+
+    if (selectedIndex >= dayWindowStart + visibleDayCount) {
+      setDayWindowStart(Math.max(0, selectedIndex - visibleDayCount + 1))
+      return
+    }
+
+    const maxStart = Math.max(0, calendarDays.length - visibleDayCount)
+    if (dayWindowStart > maxStart) {
+      setDayWindowStart(maxStart)
+    }
+  }, [calendarDays, dayWindowStart, selectedDateKey, visibleDayCount])
+
+  const currentMonthCaption = useMemo(() => {
+    if (visibleDays.length === 0) {
+      return ''
+    }
+    const first = visibleDays[0]
+    const last = visibleDays[visibleDays.length - 1]
+    if (first.monthLabel === last.monthLabel) {
+      return first.monthLabel
+    }
+    return `${first.monthLabel} - ${last.monthLabel}`
+  }, [visibleDays])
+
   const filteredItems = useMemo(() => {
-    if (!selectedMonth) {
+    if (!selectedDateKey) {
       return [] as Event[]
     }
 
     const normalizedQuery = query.trim().toLowerCase()
 
     return safeItems.filter((event) => {
-      const parts = toLocalParts(event.startAt)
-      if (parts.year !== selectedMonth.year || parts.month !== selectedMonth.month || parts.day !== selectedDay) {
+      if (toDateKey(event.startAt) !== selectedDateKey) {
         return false
       }
       if (selectedCategoryId !== 'all' && event.categoryId !== selectedCategoryId) {
@@ -229,7 +249,7 @@ function EventsPage({ onRequireAuth }: Props) {
       }
       return `${event.title} ${event.description}`.toLowerCase().includes(normalizedQuery)
     })
-  }, [query, safeItems, selectedCategoryId, selectedMonth, selectedDay])
+  }, [query, safeItems, selectedCategoryId, selectedDateKey])
 
   const venueById = useMemo(
     () =>
@@ -293,34 +313,9 @@ function EventsPage({ onRequireAuth }: Props) {
           </div>
         )}
 
-        {monthOptions.length > 0 && (
+        {calendarDays.length > 0 && (
           <div className="events__datebar">
-            <div className="events__month-select">
-              <span>Месяц:</span>
-              <select
-                value={selectedMonthKey}
-                onChange={(event) => {
-                  const nextKey = event.target.value
-                  setSelectedMonthKey(nextKey)
-                  const month = monthOptions.find((item) => item.key === nextKey)
-                  if (!month) {
-                    return
-                  }
-                  const firstEventDay = safeItems
-                    .map((item) => toLocalParts(item.startAt))
-                    .find((parts) => parts.year === month.year && parts.month === month.month)?.day
-                  setSelectedDay(firstEventDay || 1)
-                  setDayWindowStart(0)
-                }}
-              >
-                {monthOptions.map((month) => (
-                  <option key={month.key} value={month.key}>
-                    {month.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
+            <div className="events__month-caption">{currentMonthCaption}</div>
             <div className="events__days">
               <button
                 className="events__day-arrow"
@@ -331,26 +326,24 @@ function EventsPage({ onRequireAuth }: Props) {
               >
                 ‹
               </button>
-              {visibleDays.map((day) => {
-                const hasEvents = monthEventDays.has(day)
-                return (
-                  <button
-                    className={`events__day${selectedDay === day ? ' events__day--active' : ''}${!hasEvents ? ' events__day--empty' : ''}`}
-                    key={day}
-                    type="button"
-                    onClick={() => setSelectedDay(day)}
-                  >
-                    <span className="events__day-week">{dayWeekLabel(selectedMonth!.year, selectedMonth!.month, day)}</span>
-                    <span className="events__day-number">{day}</span>
-                  </button>
-                )
-              })}
+              {visibleDays.map((day) => (
+                <button
+                  className={`events__day${selectedDateKey === day.key ? ' events__day--active' : ''}${!day.hasEvents ? ' events__day--empty' : ''}`}
+                  key={day.key}
+                  type="button"
+                  onClick={() => setSelectedDateKey(day.key)}
+                >
+                  {day.isMonthStart && <span className="events__day-month">{day.monthShort}</span>}
+                  <span className="events__day-week">{day.weekLabel}</span>
+                  <span className="events__day-number">{day.day}</span>
+                </button>
+              ))}
               <button
                 className="events__day-arrow"
                 type="button"
                 onClick={() =>
                   setDayWindowStart((prev) =>
-                    Math.min(Math.max(0, days.length - visibleDayCount), prev + visibleDayCount),
+                    Math.min(Math.max(0, calendarDays.length - visibleDayCount), prev + visibleDayCount),
                   )
                 }
                 disabled={!canSlideDaysRight}
@@ -365,9 +358,7 @@ function EventsPage({ onRequireAuth }: Props) {
         <div className="events__panel-title">События на выбранную дату</div>
         {(state.status === 'idle' || state.status === 'loading') && <div className="events__status">Загружаем афишу...</div>}
         {state.status === 'error' && <div className="events__status events__status--error">{state.error}</div>}
-        {state.status === 'success' && filteredItems.length === 0 && (
-          <div className="events__status">Событий на эту дату нет.</div>
-        )}
+        {state.status === 'success' && filteredItems.length === 0 && <div className="events__status">Событий на эту дату нет.</div>}
 
         <div className="events__grid">
           {filteredItems.map((event) => (
