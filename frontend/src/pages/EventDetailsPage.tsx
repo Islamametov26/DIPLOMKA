@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { createBooking } from '../api/bookings'
 import { listCategories } from '../api/categories'
 import { listEvents, listOccupiedSeats } from '../api/events'
 import { listVenues } from '../api/venues'
 import SeatPicker from '../components/SeatPicker'
 import { useAuth } from '../context/AuthContext'
+import { useLocale } from '../context/LocaleContext'
 import type { Category } from '../types/category'
 import type { Event } from '../types/event'
 import type { Venue } from '../types/venue'
@@ -43,6 +44,7 @@ function getYoutubeEmbedUrl(rawUrl: string) {
 
 function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
   const { user } = useAuth()
+  const { t, localeTag } = useLocale()
   const [state, setState] = useState<PageState>(initialState)
   const [buyOpen, setBuyOpen] = useState(false)
   const [selectedSeats, setSelectedSeats] = useState<string[]>([])
@@ -66,14 +68,14 @@ function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
         if (controller.signal.aborted) {
           return
         }
-        const message = error instanceof Error ? error.message : 'Не удалось загрузить событие.'
+        const message = error instanceof Error ? error.message : t('event.loadError')
         setState({ status: 'error', items: [], categories: [], venues: [], error: message })
       }
     }
 
     load()
     return () => controller.abort()
-  }, [])
+  }, [t])
 
   const event = useMemo(() => state.items.find((item) => item.id === eventId) ?? null, [state.items, eventId])
   const venue = useMemo(() => state.venues.find((item) => item.id === event?.venueId), [state.venues, event?.venueId])
@@ -126,7 +128,7 @@ function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
     }
     if (selectedSeats.length === 0) {
       setBookingStatus('error')
-      setBookingError('Выберите хотя бы одно место.')
+      setBookingError(t('event.seatSelectError'))
       return
     }
     setBookingStatus('loading')
@@ -140,21 +142,21 @@ function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
     } catch (error) {
       const message = error instanceof Error ? error.message.toLowerCase() : ''
       if (message.includes('409') || message.includes('conflict') || message.includes('already booked')) {
-        setBookingError('Эти места уже заняты или уже куплены вами.')
+        setBookingError(t('event.seatConflict'))
       } else {
-        setBookingError('Не удалось оформить покупку билетов.')
+        setBookingError(t('event.purchaseError'))
       }
       setBookingStatus('error')
     }
   }
 
-  const safeTitle = cleanText(event?.title, 'Событие')
-  const safeDescription = cleanText(event?.description, 'Описание события скоро появится.')
-  const safeVenueName = cleanText(venue?.name, 'Неизвестно')
-  const safeVenueAddress = cleanText(venue?.address, 'Адрес не указан')
-  const safeCategoryName = cleanText(category?.name, 'Без категории')
+  const safeTitle = cleanText(event?.title, 'Event')
+  const safeDescription = cleanText(event?.description, '')
+  const safeVenueName = cleanText(venue?.name, '-')
+  const safeVenueAddress = cleanText(venue?.address, '-')
+  const safeCategoryName = cleanText(category?.name, '-')
   const normalizedCategory = safeCategoryName.toLowerCase()
-  const isMovie = normalizedCategory.includes('фильм') || normalizedCategory.includes('кино')
+  const isMovie = normalizedCategory.includes('фильм') || normalizedCategory.includes('кино') || normalizedCategory.includes('movie')
   const safeTrailerUrl = cleanText(event?.trailerUrl, '')
   const trailerEmbed = getYoutubeEmbedUrl(safeTrailerUrl)
   const galleryImages = useMemo(() => {
@@ -169,12 +171,12 @@ function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
   return (
     <section className="event-page">
       <button className="event-page__back" type="button" onClick={onBack}>
-        Назад к афише
+        {t('event.backToEvents')}
       </button>
 
-      {state.status === 'loading' && <div className="events__status">Загружаем полную информацию о событии...</div>}
-      {state.status === 'error' && <div className="events__status events__status--error">{state.error || 'Ошибка загрузки'}</div>}
-      {state.status === 'success' && !event && <div className="events__status events__status--error">Событие не найдено.</div>}
+      {state.status === 'loading' && <div className="events__status">{t('event.loading')}</div>}
+      {state.status === 'error' && <div className="events__status events__status--error">{state.error || t('event.loadError')}</div>}
+      {state.status === 'success' && !event && <div className="events__status events__status--error">{t('event.notFound')}</div>}
 
       {state.status === 'success' && event && (
         <>
@@ -186,7 +188,7 @@ function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
                 <div className="event-page__poster-image event-page__hero--placeholder" aria-hidden="true" />
               )}
               <button className="event-page__buy" type="button" onClick={openBuyPopup}>
-                Купить билет
+                {t('events.buyTicket')}
               </button>
             </aside>
 
@@ -196,23 +198,31 @@ function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
               <p className="event-page__description">{safeDescription}</p>
 
               <div className="event-page__meta">
-                <span>Начало: {new Date(event.startAt).toLocaleString('ru-RU')}</span>
-                <span>Окончание: {new Date(event.endAt).toLocaleString('ru-RU')}</span>
-                <span>Площадка: {safeVenueName}</span>
-                <span>Адрес: {safeVenueAddress}</span>
+                <span>
+                  {t('event.start')}: {new Date(event.startAt).toLocaleString(localeTag)}
+                </span>
+                <span>
+                  {t('event.end')}: {new Date(event.endAt).toLocaleString(localeTag)}
+                </span>
+                <span>
+                  {t('events.venue')}: {safeVenueName}
+                </span>
+                <span>
+                  {t('event.address')}: {safeVenueAddress}
+                </span>
               </div>
             </article>
           </div>
 
           {isMovie && (
-            <section className="event-page__media" aria-label="Трейлер и кадры">
-              <h2 className="event-page__section-title">Трейлер и кадры из фильма</h2>
+            <section className="event-page__media" aria-label={t('event.trailerFrames')}>
+              <h2 className="event-page__section-title">{t('event.trailerFrames')}</h2>
               {trailerEmbed ? (
                 <div className="event-page__trailer-wrap">
                   <iframe
                     className="event-page__trailer"
                     src={trailerEmbed}
-                    title={`Трейлер: ${safeTitle}`}
+                    title={`${t('event.trailerOpen')}: ${safeTitle}`}
                     loading="lazy"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     referrerPolicy="strict-origin-when-cross-origin"
@@ -221,13 +231,13 @@ function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
                 </div>
               ) : safeTrailerUrl ? (
                 <div className="event-page__trailer-placeholder">
-                  <span>Ссылка на трейлер указана, но не распознана как YouTube:</span>
+                  <span>{t('event.trailerBad')}</span>
                   <a href={safeTrailerUrl} target="_blank" rel="noreferrer">
-                    Открыть трейлер
+                    {t('event.trailerOpen')}
                   </a>
                 </div>
               ) : (
-                <div className="event-page__trailer-placeholder">Трейлер для этого фильма пока не добавлен.</div>
+                <div className="event-page__trailer-placeholder">{t('event.trailerMissing')}</div>
               )}
 
               {galleryImages.length > 0 ? (
@@ -237,13 +247,13 @@ function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
                       className="event-page__frame"
                       key={`frame-${index}-${imageUrl}`}
                       src={imageUrl}
-                      alt={`Кадр ${index + 1}: ${safeTitle}`}
+                      alt={`${safeTitle} #${index + 1}`}
                       loading="lazy"
                     />
                   ))}
                 </div>
               ) : (
-                <div className="event-page__trailer-placeholder">Кадры из фильма пока не добавлены.</div>
+                <div className="event-page__trailer-placeholder">{t('event.framesMissing')}</div>
               )}
             </section>
           )}
@@ -251,16 +261,16 @@ function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
       )}
 
       {buyOpen && event && (
-        <div className="modal" role="dialog" aria-modal="true" aria-label="Выбор мест">
+        <div className="modal" role="dialog" aria-modal="true" aria-label={t('event.buyDialogAria')}>
           <button className="modal__overlay" type="button" onClick={closeBuyPopup} />
           <div className="modal__content" role="document">
             <div className="modal__header">
               <div>
-                <p className="modal__eyebrow">Покупка билетов</p>
+                <p className="modal__eyebrow">{t('event.purchase')}</p>
                 <h2 className="modal__title">{safeTitle}</h2>
               </div>
               <button className="modal__close" type="button" onClick={closeBuyPopup}>
-                Закрыть
+                {t('event.close')}
               </button>
             </div>
 
@@ -268,15 +278,15 @@ function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
 
             <div className="modal__booking">
               <div>
-                <div className="modal__booking-label">Итого</div>
+                <div className="modal__booking-label">{t('event.total')}</div>
                 <div className="modal__booking-price">{total} KZT</div>
               </div>
               <button className="modal__primary" type="button" onClick={handleBooking} disabled={bookingStatus === 'loading'}>
-                {bookingStatus === 'loading' ? 'Покупаем...' : 'Купить билеты'}
+                {bookingStatus === 'loading' ? t('event.buying') : t('event.buyTickets')}
               </button>
             </div>
 
-            {bookingStatus === 'success' && <div className="modal__status">Покупка успешна! Билеты оформлены.</div>}
+            {bookingStatus === 'success' && <div className="modal__status">{t('event.success')}</div>}
             {bookingError && <div className="modal__status modal__status--error">{bookingError}</div>}
           </div>
         </div>
@@ -286,3 +296,4 @@ function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
 }
 
 export default EventDetailsPage
+

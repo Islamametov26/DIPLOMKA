@@ -3,6 +3,7 @@ import './App.css'
 import AuthModal from './components/AuthModal'
 import ProfileModal from './components/ProfileModal'
 import { useAuth } from './context/AuthContext'
+import { useLocale } from './context/LocaleContext'
 import AdminPage from './pages/AdminPage'
 import EventDetailsPage from './pages/EventDetailsPage'
 import EventsPage from './pages/EventsPage'
@@ -10,6 +11,7 @@ import VenuesPage from './pages/VenuesPage'
 
 function App() {
   const { user } = useAuth()
+  const { locale, setLocale, t } = useLocale()
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window === 'undefined') {
       return 'light'
@@ -77,18 +79,30 @@ function App() {
               href="/"
               onClick={handleNavLink('/')}
             >
-              Афиша
+              {t('nav.events')}
             </a>
             <a
               className={`app__link${isVenues ? ' app__link--active' : ''}`}
               href="/venues"
               onClick={handleNavLink('/venues')}
             >
-              Площадки
+              {t('nav.venues')}
             </a>
             <button className="app__link" type="button" onClick={() => setAboutOpen(true)}>
-              О нас
+              {t('nav.about')}
             </button>
+          </div>
+          <div className="app__lang">
+            {(['ru', 'kk', 'en'] as const).map((item) => (
+              <button
+                key={item}
+                className={`app__lang-button${locale === item ? ' app__lang-button--active' : ''}`}
+                type="button"
+                onClick={() => setLocale(item)}
+              >
+                {item.toUpperCase()}
+              </button>
+            ))}
           </div>
           {user ? (
             <button className="app__profile" type="button" onClick={() => setProfileOpen(true)}>
@@ -96,11 +110,11 @@ function App() {
             </button>
           ) : (
             <button className="app__profile" type="button" onClick={() => setAuthOpen(true)}>
-              Войти
+              {t('auth.login')}
             </button>
           )}
           <button className="theme-toggle" type="button" onClick={toggleTheme}>
-            {theme === 'light' ? 'Темная тема' : 'Светлая тема'}
+            {theme === 'light' ? t('theme.dark') : t('theme.light')}
           </button>
         </div>
       </header>
@@ -120,15 +134,12 @@ function App() {
           <button className="about-drawer__overlay" type="button" onClick={() => setAboutOpen(false)} />
           <aside className="about-drawer__panel">
             <button className="about-drawer__close" type="button" onClick={() => setAboutOpen(false)}>
-              Закрыть
+              {t('drawer.close')}
             </button>
-            <p className="about-drawer__eyebrow">О НАС</p>
+            <p className="about-drawer__eyebrow">{t('drawer.about')}</p>
             <h2 className="about-drawer__title">AFISHA AIA</h2>
-            <p className="about-drawer__text">
-              Я сделал этот сайт как удобную городскую афишу, чтобы быстро находить события и площадки в одном месте.
-              Основную логику и структуру я продумал сам, а ИИ помог ускорить часть реализации и улучшить интерфейс.
-            </p>
-            <p className="about-drawer__eyebrow">КОНТАКТЫ</p>
+            <p className="about-drawer__text">{t('drawer.aboutText')}</p>
+            <p className="about-drawer__eyebrow">{t('drawer.contacts')}</p>
             <div className="about-drawer__contacts">
               <a href="tel:+77780089866">+7 778 008 98 66</a>
               <a href="https://t.me/ametov180" target="_blank" rel="noreferrer">

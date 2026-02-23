@@ -3,6 +3,7 @@ import { listCategories } from '../api/categories'
 import { listEvents } from '../api/events'
 import { listVenues } from '../api/venues'
 import EventCard from '../components/EventCard'
+import { useLocale } from '../context/LocaleContext'
 import type { Category } from '../types/category'
 import type { Event } from '../types/event'
 import type { Venue } from '../types/venue'
@@ -46,21 +47,21 @@ function parseKey(key: string) {
   return new Date(y, m - 1, d)
 }
 
-function toMonthLabel(year: number, month: number) {
-  return new Date(year, month - 1, 1).toLocaleDateString('ru-RU', {
+function toMonthLabel(year: number, month: number, localeTag: string) {
+  return new Date(year, month - 1, 1).toLocaleDateString(localeTag, {
     month: 'long',
     year: 'numeric',
   })
 }
 
-function toMonthShort(year: number, month: number) {
-  return new Date(year, month - 1, 1).toLocaleDateString('ru-RU', {
+function toMonthShort(year: number, month: number, localeTag: string) {
+  return new Date(year, month - 1, 1).toLocaleDateString(localeTag, {
     month: 'short',
   })
 }
 
-function toHumanDate(key: string) {
-  return parseKey(key).toLocaleDateString('ru-RU', {
+function toHumanDate(key: string, localeTag: string) {
+  return parseKey(key).toLocaleDateString(localeTag, {
     day: '2-digit',
     month: 'long',
     year: 'numeric',
@@ -68,6 +69,7 @@ function toHumanDate(key: string) {
 }
 
 function EventsPage({ onOpenEvent }: Props) {
+  const { t, localeTag } = useLocale()
   const PAGE_SIZE = 9
   const [state, setState] = useState<EventsState>(emptyState)
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all')
@@ -109,7 +111,7 @@ function EventsPage({ onOpenEvent }: Props) {
         if (controller.signal.aborted) {
           return
         }
-        const message = error instanceof Error ? error.message : 'Не удалось загрузить афишу.'
+        const message = error instanceof Error ? error.message : t('events.loading')
         setState({ status: 'error', items: [], categories: [], venues: [], error: message })
       }
     }
@@ -117,7 +119,7 @@ function EventsPage({ onOpenEvent }: Props) {
     load()
 
     return () => controller.abort()
-  }, [])
+  }, [t])
 
   useEffect(() => {
     const updateVisibleCount = () => {
@@ -168,9 +170,9 @@ function EventsPage({ onOpenEvent }: Props) {
         year,
         month,
         day,
-        weekLabel: cursor.toLocaleDateString('ru-RU', { weekday: 'short' }),
-        monthLabel: toMonthLabel(year, month),
-        monthShort: toMonthShort(year, month),
+        weekLabel: cursor.toLocaleDateString(localeTag, { weekday: 'short' }),
+        monthLabel: toMonthLabel(year, month, localeTag),
+        monthShort: toMonthShort(year, month, localeTag),
         hasEvents: eventDateSet.has(key),
         isMonthStart: day === 1,
       })
@@ -178,7 +180,7 @@ function EventsPage({ onOpenEvent }: Props) {
     }
 
     return days
-  }, [eventDateSet, safeItems.length])
+  }, [eventDateSet, localeTag, safeItems.length])
 
   const visibleDays = useMemo(
     () => calendarDays.slice(dayWindowStart, dayWindowStart + visibleDayCount),
@@ -273,7 +275,7 @@ function EventsPage({ onOpenEvent }: Props) {
   return (
     <section className="events">
       <div className="events__hero">
-        <p className="events__eyebrow">Городской портал</p>
+        <p className="events__eyebrow">{t('events.cityPortal')}</p>
         {safeCategories.length > 0 && (
           <div className="events__filters events__filters--hero">
             <button
@@ -281,7 +283,7 @@ function EventsPage({ onOpenEvent }: Props) {
               type="button"
               onClick={() => setSelectedCategoryId('all')}
             >
-              Все
+              {t('events.all')}
             </button>
             {safeCategories.map((category) => (
               <button
@@ -296,29 +298,26 @@ function EventsPage({ onOpenEvent }: Props) {
             <input
               className="events__search-input events__search-input--hero"
               type="search"
-              placeholder="Поиск..."
+              placeholder={t('events.searchPlaceholder')}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              aria-label="Поиск событий"
+              aria-label={t('events.searchAria')}
             />
           </div>
         )}
-        <h1 className="events__title">Афиша мероприятий</h1>
-        <p className="events__subtitle">
-          События города на ближайшие недели: выставки, лекции, концерты и спектакли. Выбирайте формат и планируйте
-          вечер заранее.
-        </p>
+        <h1 className="events__title">{t('events.title')}</h1>
+        <p className="events__subtitle">{t('events.subtitle')}</p>
       </div>
 
       {popularItems.length > 0 && (
         <section className="events__popular" aria-label="Популярное">
           <div className="events__popular-header">
-            <h2 className="events__popular-title">Популярное</h2>
+            <h2 className="events__popular-title">{t('events.popular')}</h2>
             <div className="events__popular-actions">
-              <button className="events__popular-arrow" type="button" onClick={() => slidePopular('left')} aria-label="Назад">
+              <button className="events__popular-arrow" type="button" onClick={() => slidePopular('left')} aria-label={t('events.back')}>
                 ‹
               </button>
-              <button className="events__popular-arrow" type="button" onClick={() => slidePopular('right')} aria-label="Вперед">
+              <button className="events__popular-arrow" type="button" onClick={() => slidePopular('right')} aria-label={t('events.forward')}>
                 ›
               </button>
             </div>
@@ -343,11 +342,13 @@ function EventsPage({ onOpenEvent }: Props) {
                 ) : (
                   <div className="events__popular-image events__popular-image--placeholder" aria-hidden="true" />
                 )}
-                <div className="events__popular-meta">{new Date(event.startAt).toLocaleString('ru-RU')}</div>
+                <div className="events__popular-meta">{new Date(event.startAt).toLocaleString(localeTag)}</div>
                 <h3 className="events__popular-name">{event.title}</h3>
                 <p className="events__popular-description">{event.description}</p>
                 <div className="events__popular-footer">
-                  <span className="events__popular-venue">Площадка: {venueById[event.venueId]?.name || 'Неизвестно'}</span>
+                  <span className="events__popular-venue">
+                    {t('events.venue')}: {venueById[event.venueId]?.name || '-'}
+                  </span>
                 </div>
                 <div className="events__popular-actions-wrap">
                   <button
@@ -358,7 +359,7 @@ function EventsPage({ onOpenEvent }: Props) {
                       onOpenEvent(event.id)
                     }}
                   >
-                    Купить билет
+                    {t('events.buyTicket')}
                   </button>
                 </div>
               </article>
@@ -373,9 +374,9 @@ function EventsPage({ onOpenEvent }: Props) {
             <div className="events__month-caption">{currentMonthCaption}</div>
             {selectedDateKey && (
               <div className="events__date-active">
-                Выбрано: {toHumanDate(selectedDateKey)}
+                {t('events.selected')}: {toHumanDate(selectedDateKey, localeTag)}
                 <button className="events__date-reset" type="button" onClick={() => setSelectedDateKey('')}>
-                  Сбросить дату
+                  {t('events.resetDate')}
                 </button>
               </div>
             )}
@@ -385,7 +386,7 @@ function EventsPage({ onOpenEvent }: Props) {
                 type="button"
                 onClick={() => setDayWindowStart((prev) => Math.max(0, prev - visibleDayCount))}
                 disabled={!canSlideDaysLeft}
-                aria-label="Предыдущие даты"
+                aria-label={t('events.back')}
               >
                 ‹
               </button>
@@ -408,7 +409,7 @@ function EventsPage({ onOpenEvent }: Props) {
                   setDayWindowStart((prev) => Math.min(Math.max(0, calendarDays.length - visibleDayCount), prev + visibleDayCount))
                 }
                 disabled={!canSlideDaysRight}
-                aria-label="Следующие даты"
+                aria-label={t('events.forward')}
               >
                 ›
               </button>
@@ -416,11 +417,11 @@ function EventsPage({ onOpenEvent }: Props) {
           </div>
         )}
 
-        <div className="events__panel-title">События</div>
-        {(state.status === 'idle' || state.status === 'loading') && <div className="events__status">Загружаем афишу...</div>}
+        <div className="events__panel-title">{t('events.panelTitle')}</div>
+        {(state.status === 'idle' || state.status === 'loading') && <div className="events__status">{t('events.loading')}</div>}
         {state.status === 'error' && <div className="events__status events__status--error">{state.error}</div>}
         {state.status === 'success' && filteredItems.length === 0 && (
-          <div className="events__status">{selectedDateKey ? 'Событий на эту дату нет.' : 'Событий по текущему фильтру нет.'}</div>
+          <div className="events__status">{selectedDateKey ? t('events.emptyDate') : t('events.emptyFilter')}</div>
         )}
 
         <div className={`events__grid${visibleItems.length === 1 ? ' events__grid--compact' : ''}`}>
@@ -437,7 +438,7 @@ function EventsPage({ onOpenEvent }: Props) {
         {canShowMore && (
           <div className="events__more-wrap">
             <button className="events__more" type="button" onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}>
-              Показать еще
+              {t('events.showMore')}
             </button>
           </div>
         )}
