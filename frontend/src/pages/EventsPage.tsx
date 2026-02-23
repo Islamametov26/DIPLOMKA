@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import { listCategories } from '../api/categories'
 import { listEvents } from '../api/events'
 import { listVenues } from '../api/venues'
@@ -60,6 +60,14 @@ function toMonthShort(year: number, month: number) {
   })
 }
 
+function toHumanDate(key: string) {
+  return parseKey(key).toLocaleDateString('ru-RU', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
 function EventsPage({ onRequireAuth }: Props) {
   const [state, setState] = useState<EventsState>(emptyState)
   const [activeEvent, setActiveEvent] = useState<Event | null>(null)
@@ -79,6 +87,8 @@ function EventsPage({ onRequireAuth }: Props) {
     return 9
   })
   const [query, setQuery] = useState('')
+  const popularRef = useRef<HTMLDivElement | null>(null)
+
   const safeItems = Array.isArray(state.items) ? state.items : []
   const safeCategories = Array.isArray(state.categories) ? state.categories : []
   const safeVenues = Array.isArray(state.venues) ? state.venues : []
@@ -185,31 +195,8 @@ function EventsPage({ onRequireAuth }: Props) {
       return
     }
 
-    if (!selectedDateKey || !calendarDays.some((day) => day.key === selectedDateKey)) {
-      const firstEventDay = calendarDays.find((day) => day.hasEvents)
-      setSelectedDateKey(firstEventDay?.key || calendarDays[0].key)
-      setDayWindowStart(0)
-    }
-  }, [calendarDays, selectedDateKey])
-
-  useEffect(() => {
-    if (!selectedDateKey || calendarDays.length === 0) {
-      return
-    }
-
-    const selectedIndex = calendarDays.findIndex((day) => day.key === selectedDateKey)
-    if (selectedIndex === -1) {
-      return
-    }
-
-    if (selectedIndex < dayWindowStart) {
-      setDayWindowStart(selectedIndex)
-      return
-    }
-
-    if (selectedIndex >= dayWindowStart + visibleDayCount) {
-      setDayWindowStart(Math.max(0, selectedIndex - visibleDayCount + 1))
-      return
+    if (selectedDateKey && !calendarDays.some((day) => day.key === selectedDateKey)) {
+      setSelectedDateKey('')
     }
 
     const maxStart = Math.max(0, calendarDays.length - visibleDayCount)
@@ -231,14 +218,10 @@ function EventsPage({ onRequireAuth }: Props) {
   }, [visibleDays])
 
   const filteredItems = useMemo(() => {
-    if (!selectedDateKey) {
-      return [] as Event[]
-    }
-
     const normalizedQuery = query.trim().toLowerCase()
 
     return safeItems.filter((event) => {
-      if (toDateKey(event.startAt) !== selectedDateKey) {
+      if (selectedDateKey && toDateKey(event.startAt) !== selectedDateKey) {
         return false
       }
       if (selectedCategoryId !== 'all' && event.categoryId !== selectedCategoryId) {
@@ -250,6 +233,14 @@ function EventsPage({ onRequireAuth }: Props) {
       return `${event.title} ${event.description}`.toLowerCase().includes(normalizedQuery)
     })
   }, [query, safeItems, selectedCategoryId, selectedDateKey])
+
+  const popularItems = useMemo(() => {
+    const published = safeItems.filter((item) => item.published)
+    const source = published.length > 0 ? published : safeItems
+    return [...source]
+      .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
+      .slice(0, 12)
+  }, [safeItems])
 
   const venueById = useMemo(
     () =>
@@ -269,30 +260,21 @@ function EventsPage({ onRequireAuth }: Props) {
     [safeCategories],
   )
 
+  const slidePopular = (direction: 'left' | 'right') => {
+    const node = popularRef.current
+    if (!node) {
+      return
+    }
+    const delta = Math.max(280, Math.floor(node.clientWidth * 0.75))
+    node.scrollBy({ left: direction === 'right' ? delta : -delta, behavior: 'smooth' })
+  }
+
   return (
     <section className="events">
       <div className="events__hero">
         <p className="events__eyebrow">Городской портал</p>
-        <h1 className="events__title">Афиша мероприятий</h1>
-        <p className="events__subtitle">
-          События города на ближайшие недели: выставки, лекции, концерты и спектакли. Выбирайте формат и планируйте
-          вечер заранее.
-        </p>
-      </div>
-
-      <div className="events__panel">
-        <div className="events__search">
-          <input
-            className="events__search-input"
-            type="search"
-            placeholder="Поиск по названию или описанию..."
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </div>
-
         {safeCategories.length > 0 && (
-          <div className="events__filters">
+          <div className="events__filters events__filters--hero">
             <button
               className={`events__filter${selectedCategoryId === 'all' ? ' events__filter--active' : ''}`}
               type="button"
@@ -312,10 +294,67 @@ function EventsPage({ onRequireAuth }: Props) {
             ))}
           </div>
         )}
+        <h1 className="events__title">Афиша мероприятий</h1>
+        <p className="events__subtitle">
+          События города на ближайшие недели: выставки, лекции, концерты и спектакли. Выбирайте формат и планируйте
+          вечер заранее.
+        </p>
+      </div>
+
+      {popularItems.length > 0 && (
+        <section className="events__popular" aria-label="Популярное">
+          <div className="events__popular-header">
+            <h2 className="events__popular-title">Популярное</h2>
+            <div className="events__popular-actions">
+              <button className="events__popular-arrow" type="button" onClick={() => slidePopular('left')} aria-label="Назад">
+                ‹
+              </button>
+              <button className="events__popular-arrow" type="button" onClick={() => slidePopular('right')} aria-label="Вперед">
+                ›
+              </button>
+            </div>
+          </div>
+          <div className="events__popular-track" ref={popularRef}>
+            {popularItems.map((event) => (
+              <article className="events__popular-card" key={`popular-${event.id}`}>
+                {event.imageUrl ? (
+                  <img className="events__popular-image" src={event.imageUrl} alt={event.title} loading="lazy" />
+                ) : (
+                  <div className="events__popular-image events__popular-image--placeholder" aria-hidden="true" />
+                )}
+                <div className="events__popular-meta">{new Date(event.startAt).toLocaleString('ru-RU')}</div>
+                <h3 className="events__popular-name">{event.title}</h3>
+                <button className="events__popular-button" type="button" onClick={() => setActiveEvent(event)}>
+                  Открыть
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <div className="events__panel">
+        <div className="events__search">
+          <input
+            className="events__search-input"
+            type="search"
+            placeholder="Поиск по названию или описанию..."
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </div>
 
         {calendarDays.length > 0 && (
           <div className="events__datebar">
             <div className="events__month-caption">{currentMonthCaption}</div>
+            {selectedDateKey && (
+              <div className="events__date-active">
+                Выбрано: {toHumanDate(selectedDateKey)}
+                <button className="events__date-reset" type="button" onClick={() => setSelectedDateKey('')}>
+                  Сбросить дату
+                </button>
+              </div>
+            )}
             <div className="events__days">
               <button
                 className="events__day-arrow"
@@ -331,7 +370,7 @@ function EventsPage({ onRequireAuth }: Props) {
                   className={`events__day${selectedDateKey === day.key ? ' events__day--active' : ''}${!day.hasEvents ? ' events__day--empty' : ''}`}
                   key={day.key}
                   type="button"
-                  onClick={() => setSelectedDateKey(day.key)}
+                  onClick={() => setSelectedDateKey((prev) => (prev === day.key ? '' : day.key))}
                 >
                   {day.isMonthStart && <span className="events__day-month">{day.monthShort}</span>}
                   <span className="events__day-week">{day.weekLabel}</span>
@@ -342,9 +381,7 @@ function EventsPage({ onRequireAuth }: Props) {
                 className="events__day-arrow"
                 type="button"
                 onClick={() =>
-                  setDayWindowStart((prev) =>
-                    Math.min(Math.max(0, calendarDays.length - visibleDayCount), prev + visibleDayCount),
-                  )
+                  setDayWindowStart((prev) => Math.min(Math.max(0, calendarDays.length - visibleDayCount), prev + visibleDayCount))
                 }
                 disabled={!canSlideDaysRight}
                 aria-label="Следующие даты"
@@ -355,10 +392,12 @@ function EventsPage({ onRequireAuth }: Props) {
           </div>
         )}
 
-        <div className="events__panel-title">События на выбранную дату</div>
+        <div className="events__panel-title">События</div>
         {(state.status === 'idle' || state.status === 'loading') && <div className="events__status">Загружаем афишу...</div>}
         {state.status === 'error' && <div className="events__status events__status--error">{state.error}</div>}
-        {state.status === 'success' && filteredItems.length === 0 && <div className="events__status">Событий на эту дату нет.</div>}
+        {state.status === 'success' && filteredItems.length === 0 && (
+          <div className="events__status">{selectedDateKey ? 'Событий на эту дату нет.' : 'Событий по текущему фильтру нет.'}</div>
+        )}
 
         <div className="events__grid">
           {filteredItems.map((event) => (
