@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+п»їimport { useMemo, useState } from 'react'
 import { createEvent, deleteEvent, updateEvent } from '../api/events'
 import type { Category } from '../types/category'
 import type { Event } from '../types/event'
@@ -76,7 +76,7 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
   const venuesById = useMemo(
     () =>
       venues.reduce<Record<string, string>>((acc, venue) => {
-        acc[venue.id] = cleanText(venue.name, 'Площадка')
+        acc[venue.id] = cleanText(venue.name, 'РџР»РѕС‰Р°РґРєР°')
         return acc
       }, {}),
     [venues],
@@ -85,7 +85,7 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
   const categoriesById = useMemo(
     () =>
       categories.reduce<Record<string, string>>((acc, category) => {
-        acc[category.id] = cleanText(category.name, 'Категория')
+        acc[category.id] = cleanText(category.name, 'РљР°С‚РµРіРѕСЂРёСЏ')
         return acc
       }, {}),
     [categories],
@@ -136,7 +136,7 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
 
     if (!form.startAt || !form.endAt || !form.venueId || !form.categoryId) {
       setStatus('error')
-      setError('Заполните дату, время, площадку и категорию.')
+      setError('Р—Р°РїРѕР»РЅРёС‚Рµ РґР°С‚Сѓ, РІСЂРµРјСЏ, РїР»РѕС‰Р°РґРєСѓ Рё РєР°С‚РµРіРѕСЂРёСЋ.')
       return
     }
 
@@ -169,14 +169,14 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
       setStatus('success')
       onSaved()
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Не удалось сохранить событие.'
-      setError(cleanText(message, 'Не удалось сохранить событие.'))
+      const message = err instanceof Error ? err.message : 'РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ СЃРѕР±С‹С‚РёРµ.'
+      setError(cleanText(message, 'РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ СЃРѕР±С‹С‚РёРµ.'))
       setStatus('error')
     }
   }
 
   const handleDeleteById = async (eventId: string) => {
-    const confirmed = window.confirm('Удалить событие?')
+    const confirmed = window.confirm('РЈРґР°Р»РёС‚СЊ СЃРѕР±С‹С‚РёРµ?')
     if (!confirmed) {
       return
     }
@@ -193,8 +193,8 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
       setStatus('success')
       onSaved()
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Не удалось удалить событие.'
-      setError(cleanText(message, 'Не удалось удалить событие.'))
+      const message = err instanceof Error ? err.message : 'РќРµ СѓРґР°Р»РѕСЃСЊ СѓРґР°Р»РёС‚СЊ СЃРѕР±С‹С‚РёРµ.'
+      setError(cleanText(message, 'РќРµ СѓРґР°Р»РѕСЃСЊ СѓРґР°Р»РёС‚СЊ СЃРѕР±С‹С‚РёРµ.'))
       setStatus('error')
     } finally {
       setDeletingId(null)
@@ -205,23 +205,23 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
     <section className="admin">
       <div className="admin__header">
         <div>
-          <p className="admin__eyebrow">События</p>
-          <h2 className="admin__title">Редактирование афиши</h2>
+          <p className="admin__eyebrow">РЎРѕР±С‹С‚РёСЏ</p>
+          <h2 className="admin__title">Р РµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ Р°С„РёС€Рё</h2>
         </div>
         <div className="admin__actions">
           <button className="admin__ghost" type="button" onClick={handleCreateNew}>
-            Добавить событие
+            Р”РѕР±Р°РІРёС‚СЊ СЃРѕР±С‹С‚РёРµ
           </button>
         </div>
       </div>
 
       <div className="admin__summary">
-        <span>Всего событий: {events.length}</span>
-        <span>Опубликовано: {events.filter((event) => event.published).length}</span>
+        <span>Р’СЃРµРіРѕ СЃРѕР±С‹С‚РёР№: {events.length}</span>
+        <span>РћРїСѓР±Р»РёРєРѕРІР°РЅРѕ: {events.filter((event) => event.published).length}</span>
       </div>
 
       <div className="admin__note">
-        Формат сайта информационный: у события обязательно должно быть описание, место проведения и корректное время.
+        Р¤РѕСЂРјР°С‚ СЃР°Р№С‚Р° РёРЅС„РѕСЂРјР°С†РёРѕРЅРЅС‹Р№: Сѓ СЃРѕР±С‹С‚РёСЏ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ РґРѕР»Р¶РЅРѕ Р±С‹С‚СЊ РѕРїРёСЃР°РЅРёРµ, РјРµСЃС‚Рѕ РїСЂРѕРІРµРґРµРЅРёСЏ Рё РєРѕСЂСЂРµРєС‚РЅРѕРµ РІСЂРµРјСЏ.
       </div>
 
       <div className="admin__workspace">
@@ -229,29 +229,29 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
           <input
             className="admin__search"
             type="search"
-            placeholder="Быстрый поиск события..."
+            placeholder="Р‘С‹СЃС‚СЂС‹Р№ РїРѕРёСЃРє СЃРѕР±С‹С‚РёСЏ..."
             value={listQuery}
             onChange={(event) => setListQuery(event.target.value)}
           />
 
           <div className="admin__list">
-            {filteredEvents.length === 0 && <div className="admin__note">Событий пока нет.</div>}
+            {filteredEvents.length === 0 && <div className="admin__note">РЎРѕР±С‹С‚РёР№ РїРѕРєР° РЅРµС‚.</div>}
             {filteredEvents.map((item) => {
               const isSelected = selectedId === item.id
               const isDeleting = deletingId === item.id
-              const safeTitle = cleanText(item.title, 'Событие')
+              const safeTitle = cleanText(item.title, 'РЎРѕР±С‹С‚РёРµ')
               return (
                 <article className={`admin-item${isSelected ? ' admin-item--selected' : ''}`} key={item.id}>
                   <div className="admin-item__main">
                     <div className="admin-item__title">{safeTitle}</div>
                     <div className="admin-item__meta">
-                      {new Date(item.startAt).toLocaleString('ru-RU')} · {venuesById[item.venueId] || 'Площадка не найдена'} ·{' '}
-                      {categoriesById[item.categoryId] || 'Без категории'} · {item.published ? 'Опубликовано' : 'Скрыто'}
+                      {new Date(item.startAt).toLocaleString('ru-RU')} В· {venuesById[item.venueId] || 'РџР»РѕС‰Р°РґРєР° РЅРµ РЅР°Р№РґРµРЅР°'} В·{' '}
+                      {categoriesById[item.categoryId] || 'Р‘РµР· РєР°С‚РµРіРѕСЂРёРё'} В· {item.published ? 'РћРїСѓР±Р»РёРєРѕРІР°РЅРѕ' : 'РЎРєСЂС‹С‚Рѕ'}
                     </div>
                   </div>
                   <div className="admin-item__actions">
                     <button className="admin__secondary" type="button" onClick={() => handleSelect(item.id)}>
-                      Редактировать
+                      Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ
                     </button>
                     <button
                       className="admin__danger"
@@ -259,7 +259,7 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
                       onClick={() => handleDeleteById(item.id)}
                       disabled={isDeleting}
                     >
-                      {isDeleting ? 'Удаление...' : 'Удалить'}
+                      {isDeleting ? 'РЈРґР°Р»РµРЅРёРµ...' : 'РЈРґР°Р»РёС‚СЊ'}
                     </button>
                   </div>
                 </article>
@@ -270,16 +270,16 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
 
         <form className="admin__form" onSubmit={handleSubmit}>
           <h3 className="admin__form-title">
-            {selectedEvent ? `Редактирование: ${cleanText(selectedEvent.title, 'Событие')}` : 'Создание события'}
+            {selectedEvent ? `Р РµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ: ${cleanText(selectedEvent.title, 'РЎРѕР±С‹С‚РёРµ')}` : 'РЎРѕР·РґР°РЅРёРµ СЃРѕР±С‹С‚РёСЏ'}
           </h3>
 
           <label>
-            Название
+            РќР°Р·РІР°РЅРёРµ
             <input type="text" value={form.title} onChange={(event) => handleChange('title', event.target.value)} required />
           </label>
 
           <label>
-            Описание события
+            РћРїРёСЃР°РЅРёРµ СЃРѕР±С‹С‚РёСЏ
             <textarea
               value={form.description}
               onChange={(event) => handleChange('description', event.target.value)}
@@ -289,7 +289,7 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
           </label>
 
           <label>
-            Картинка (URL)
+            РљР°СЂС‚РёРЅРєР° (URL)
             <input
               type="url"
               placeholder="https://..."
@@ -298,10 +298,10 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
             />
           </label>
 
-          {form.imageUrl && <img className="admin__preview" src={form.imageUrl} alt="Превью события" loading="lazy" />}
+          {form.imageUrl && <img className="admin__preview" src={form.imageUrl} alt="РџСЂРµРІСЊСЋ СЃРѕР±С‹С‚РёСЏ" loading="lazy" />}
 
           <label>
-            Ссылка на трейлер (URL)
+            РЎСЃС‹Р»РєР° РЅР° С‚СЂРµР№Р»РµСЂ (URL)
             <input
               type="url"
               placeholder="https://youtube.com/watch?v=..."
@@ -311,7 +311,7 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
           </label>
 
           <label>
-            Доп. картинки (каждая ссылка с новой строки)
+            Р”РѕРї. РєР°СЂС‚РёРЅРєРё (РєР°Р¶РґР°СЏ СЃСЃС‹Р»РєР° СЃ РЅРѕРІРѕР№ СЃС‚СЂРѕРєРё)
             <textarea
               value={form.galleryUrls}
               onChange={(event) => handleChange('galleryUrls', event.target.value)}
@@ -322,7 +322,7 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
 
           <div className="admin__grid">
             <label>
-              Начало
+              РќР°С‡Р°Р»Рѕ
               <input
                 type="datetime-local"
                 value={form.startAt}
@@ -331,7 +331,7 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
               />
             </label>
             <label>
-              Окончание
+              РћРєРѕРЅС‡Р°РЅРёРµ
               <input
                 type="datetime-local"
                 value={form.endAt}
@@ -342,45 +342,45 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
           </div>
 
           <label>
-            Площадка
+            РџР»РѕС‰Р°РґРєР°
             <select value={form.venueId} onChange={(event) => handleChange('venueId', event.target.value)} required>
-              <option value="">Выберите площадку</option>
+              <option value="">Р’С‹Р±РµСЂРёС‚Рµ РїР»РѕС‰Р°РґРєСѓ</option>
               {venues.map((venue) => (
                 <option key={venue.id} value={venue.id}>
-                  {cleanText(venue.name, 'Площадка')}
+                  {cleanText(venue.name, 'РџР»РѕС‰Р°РґРєР°')}
                 </option>
               ))}
             </select>
           </label>
 
           <label>
-            Категория
+            РљР°С‚РµРіРѕСЂРёСЏ
             <select value={form.categoryId} onChange={(event) => handleChange('categoryId', event.target.value)} required>
-              <option value="">Выберите категорию</option>
+              <option value="">Р’С‹Р±РµСЂРёС‚Рµ РєР°С‚РµРіРѕСЂРёСЋ</option>
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
-                  {cleanText(category.name, 'Категория')}
+                  {cleanText(category.name, 'РљР°С‚РµРіРѕСЂРёСЏ')}
                 </option>
               ))}
             </select>
           </label>
 
           <label>
-            Статус публикации
+            РЎС‚Р°С‚СѓСЃ РїСѓР±Р»РёРєР°С†РёРё
             <select
               value={form.published ? 'published' : 'hidden'}
               onChange={(event) => handleChange('published', event.target.value === 'published')}
             >
-              <option value="published">Опубликовано</option>
-              <option value="hidden">Скрыто</option>
+              <option value="published">РћРїСѓР±Р»РёРєРѕРІР°РЅРѕ</option>
+              <option value="hidden">РЎРєСЂС‹С‚Рѕ</option>
             </select>
           </label>
 
           {error && <div className="admin__status admin__status--error">{error}</div>}
-          {status === 'success' && <div className="admin__status">Сохранено.</div>}
+          {status === 'success' && <div className="admin__status">РЎРѕС…СЂР°РЅРµРЅРѕ.</div>}
 
           <button className="admin__primary" type="submit" disabled={status === 'saving'}>
-            {status === 'saving' ? 'Сохранение...' : 'Сохранить изменения'}
+            {status === 'saving' ? 'РЎРѕС…СЂР°РЅРµРЅРёРµ...' : 'РЎРѕС…СЂР°РЅРёС‚СЊ РёР·РјРµРЅРµРЅРёСЏ'}
           </button>
         </form>
       </div>
@@ -389,3 +389,4 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
 }
 
 export default AdminPanel
+

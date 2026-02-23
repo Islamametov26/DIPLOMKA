@@ -7,8 +7,10 @@
   const questionMarks = (text.match(/\?/g) || []).length
   const hasBrokenReplacement = text.includes('�')
   const hasMojibake = /[ÐÑÃÂ]/.test(text)
+  const hasLetters = /\p{L}/u.test(text)
+  const hasQuestionNoise = /\?{2,}/.test(text) || (questionMarks > 0 && !hasLetters)
 
-  if (questionMarks >= 2 || hasBrokenReplacement || hasMojibake) {
+  if (hasQuestionNoise || hasBrokenReplacement || hasMojibake) {
     return fallback
   }
 
