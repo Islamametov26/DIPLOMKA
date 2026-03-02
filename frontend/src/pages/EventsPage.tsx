@@ -21,6 +21,8 @@ type EventsState = typeof emptyState
 
 type Props = {
   onOpenEvent: (eventId: string) => void
+  onOpenCategory?: (categoryId: string) => void
+  categoryId?: string
 }
 
 type CalendarDay = {
@@ -76,7 +78,7 @@ function toHumanDate(key: string, localeTag: string) {
   })
 }
 
-function EventsPage({ onOpenEvent }: Props) {
+function EventsPage({ onOpenEvent, onOpenCategory, categoryId }: Props) {
   const { t, localeTag } = useLocale()
   const PAGE_SIZE = 9
   const [state, setState] = useState<EventsState>(emptyState)
@@ -102,6 +104,7 @@ function EventsPage({ onOpenEvent }: Props) {
   const safeItems = Array.isArray(state.items) ? state.items : []
   const safeCategories = Array.isArray(state.categories) ? state.categories : []
   const safeVenues = Array.isArray(state.venues) ? state.venues : []
+  const effectiveCategoryId = categoryId?.trim() ? categoryId : selectedCategoryId
 
   useEffect(() => {
     const controller = new AbortController()
@@ -146,6 +149,14 @@ function EventsPage({ onOpenEvent }: Props) {
     window.addEventListener('resize', updateVisibleCount)
     return () => window.removeEventListener('resize', updateVisibleCount)
   }, [])
+
+  useEffect(() => {
+    if (categoryId && categoryId.trim()) {
+      setSelectedCategoryId(categoryId.trim())
+      return
+    }
+    setSelectedCategoryId('all')
+  }, [categoryId])
 
   const eventDateSet = useMemo(() => {
     const set = new Set<string>()
@@ -243,7 +254,7 @@ function EventsPage({ onOpenEvent }: Props) {
       if (selectedDateKey && toDateKey(event.startAt) !== selectedDateKey) {
         return false
       }
-      if (selectedCategoryId !== 'all' && event.categoryId !== selectedCategoryId) {
+      if (effectiveCategoryId !== 'all' && event.categoryId !== effectiveCategoryId) {
         return false
       }
       if (!normalizedQuery) {
@@ -258,22 +269,32 @@ function EventsPage({ onOpenEvent }: Props) {
 
       return searchable.includes(normalizedQuery)
     })
-  }, [query, safeItems, selectedCategoryId, selectedDateKey, safeCategories, venueById])
+  }, [effectiveCategoryId, query, safeItems, selectedDateKey, safeCategories, venueById])
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE)
-  }, [query, selectedCategoryId, selectedDateKey])
+  }, [query, effectiveCategoryId, selectedDateKey])
 
   const visibleItems = useMemo(() => filteredItems.slice(0, visibleCount), [filteredItems, visibleCount])
   const canShowMore = visibleCount < filteredItems.length
 
   const popularItems = useMemo(() => {
-    const published = safeItems.filter((item) => item.published)
-    const source = published.length > 0 ? published : safeItems
+    const categoryScoped =
+      effectiveCategoryId === 'all' ? safeItems : safeItems.filter((item) => item.categoryId === effectiveCategoryId)
+    const published = categoryScoped.filter((item) => item.published)
+    const source = published.length > 0 ? published : categoryScoped
     return [...source]
       .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
       .slice(0, 12)
-  }, [safeItems])
+  }, [effectiveCategoryId, safeItems])
+
+  const handleCategorySelect = (id: string) => {
+    if (onOpenCategory) {
+      onOpenCategory(id)
+      return
+    }
+    setSelectedCategoryId(id)
+  }
 
   const slidePopular = (direction: 'left' | 'right') => {
     const node = popularRef.current
@@ -294,18 +315,18 @@ function EventsPage({ onOpenEvent }: Props) {
         {safeCategories.length > 0 && (
           <div className="events__filters events__filters--hero">
             <button
-              className={`events__filter${selectedCategoryId === 'all' ? ' events__filter--active' : ''}`}
+              className={`events__filter${effectiveCategoryId === 'all' ? ' events__filter--active' : ''}`}
               type="button"
-              onClick={() => setSelectedCategoryId('all')}
+              onClick={() => handleCategorySelect('all')}
             >
               {t('events.all')}
             </button>
             {safeCategories.map((category) => (
               <button
-                className={`events__filter${selectedCategoryId === category.id ? ' events__filter--active' : ''}`}
+                className={`events__filter${effectiveCategoryId === category.id ? ' events__filter--active' : ''}`}
                 key={category.id}
                 type="button"
-                onClick={() => setSelectedCategoryId(category.id)}
+                onClick={() => handleCategorySelect(category.id)}
               >
                 {category.name}
               </button>
