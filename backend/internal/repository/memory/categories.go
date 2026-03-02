@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -38,4 +39,28 @@ func (r *CategoryRepository) Get(_ context.Context, id uuid.UUID) (domain.Catego
 		}
 	}
 	return domain.Category{}, repository.ErrNotFound
+}
+
+func (r *CategoryRepository) Create(_ context.Context, category domain.Category) (domain.Category, error) {
+	name := strings.TrimSpace(category.Name)
+	if name == "" {
+		return domain.Category{}, repository.ErrInvalid
+	}
+
+	for _, existing := range r.categories {
+		if strings.EqualFold(strings.TrimSpace(existing.Name), name) {
+			return domain.Category{}, repository.ErrConflict
+		}
+	}
+
+	now := time.Now().UTC()
+	if category.ID == uuid.Nil {
+		category.ID = uuid.New()
+	}
+	category.Name = name
+	category.CreatedAt = now
+	category.UpdatedAt = now
+	r.categories = append(r.categories, category)
+
+	return category, nil
 }

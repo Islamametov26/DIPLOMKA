@@ -26,6 +26,7 @@ type VenueRepository interface {
 type CategoryRepository interface {
 	List(ctx context.Context) ([]domain.Category, error)
 	Get(ctx context.Context, id uuid.UUID) (domain.Category, error)
+	Create(ctx context.Context, category domain.Category) (domain.Category, error)
 }
 
 type UserRepository interface {

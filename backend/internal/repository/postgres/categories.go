@@ -70,3 +70,34 @@ func (r *CategoryRepository) Get(ctx context.Context, id uuid.UUID) (domain.Cate
 
 	return category, nil
 }
+
+func (r *CategoryRepository) Create(ctx context.Context, category domain.Category) (domain.Category, error) {
+	var row *sql.Row
+	if category.ID == uuid.Nil {
+		row = r.db.QueryRowContext(ctx, `
+			INSERT INTO categories (name)
+			VALUES ($1)
+			RETURNING id, name, created_at, updated_at
+		`, category.Name)
+	} else {
+		row = r.db.QueryRowContext(ctx, `
+			INSERT INTO categories (id, name)
+			VALUES ($1, $2)
+			RETURNING id, name, created_at, updated_at
+		`, category.ID, category.Name)
+	}
+
+	if err := row.Scan(
+		&category.ID,
+		&category.Name,
+		&category.CreatedAt,
+		&category.UpdatedAt,
+	); err != nil {
+		if isUniqueViolation(err) {
+			return domain.Category{}, repository.ErrConflict
+		}
+		return domain.Category{}, err
+	}
+
+	return category, nil
+}

@@ -1,4 +1,5 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { createCategory } from '../api/categories'
 import { createEvent, deleteEvent, updateEvent } from '../api/events'
 import type { Category } from '../types/category'
 import type { Event } from '../types/event'
@@ -9,7 +10,7 @@ type Props = {
   events: Event[]
   venues: Venue[]
   categories: Category[]
-  onSaved: () => void
+  onSaved: () => void | Promise<void>
 }
 
 const emptyForm = {
@@ -50,6 +51,9 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [listQuery, setListQuery] = useState('')
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [categoryStatus, setCategoryStatus] = useState<Status>('idle')
+  const [categoryError, setCategoryError] = useState<string | null>(null)
 
   const selectedEvent = useMemo(
     () => events.find((item) => item.id === selectedId) || null,
@@ -201,6 +205,32 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
     }
   }
 
+  const handleCreateCategory = async (event: React.FormEvent) => {
+    event.preventDefault()
+
+    const name = newCategoryName.trim()
+    if (!name) {
+      setCategoryStatus('error')
+      setCategoryError('Введите название категории.')
+      return
+    }
+
+    setCategoryStatus('saving')
+    setCategoryError(null)
+
+    try {
+      const created = await createCategory({ name })
+      setNewCategoryName('')
+      setForm((prev) => ({ ...prev, categoryId: created.id }))
+      await onSaved()
+      setCategoryStatus('success')
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Не удалось создать категорию.'
+      setCategoryError(cleanText(message, 'Не удалось создать категорию.'))
+      setCategoryStatus('error')
+    }
+  }
+
   return (
     <section className="admin">
       <div className="admin__header">
@@ -233,6 +263,25 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
             value={listQuery}
             onChange={(event) => setListQuery(event.target.value)}
           />
+
+          <form className="admin__form" onSubmit={handleCreateCategory}>
+            <h3 className="admin__form-title">Новая категория</h3>
+            <label>
+              Название категории
+              <input
+                type="text"
+                value={newCategoryName}
+                onChange={(event) => setNewCategoryName(event.target.value)}
+                placeholder="Например: Детям"
+                required
+              />
+            </label>
+            {categoryError && <div className="admin__status admin__status--error">{categoryError}</div>}
+            {categoryStatus === 'success' && <div className="admin__status">Категория добавлена.</div>}
+            <button className="admin__primary" type="submit" disabled={categoryStatus === 'saving'}>
+              {categoryStatus === 'saving' ? 'Добавление...' : 'Добавить категорию'}
+            </button>
+          </form>
 
           <div className="admin__list">
             {filteredEvents.length === 0 && <div className="admin__note">Событий пока нет.</div>}
@@ -389,4 +438,3 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
 }
 
 export default AdminPanel
-

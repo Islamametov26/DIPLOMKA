@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strings"
 
 	"github.com/google/uuid"
 	"islamdiplom/internal/domain"
@@ -22,4 +23,13 @@ func (s *CategoryService) List(ctx context.Context) ([]domain.Category, error) {
 
 func (s *CategoryService) Get(ctx context.Context, id uuid.UUID) (domain.Category, error) {
 	return s.repo.Get(ctx, id)
+}
+
+func (s *CategoryService) Create(ctx context.Context, category domain.Category) (domain.Category, error) {
+	category.Name = strings.TrimSpace(category.Name)
+	if category.Name == "" {
+		return domain.Category{}, repository.ErrInvalid
+	}
+
+	return s.repo.Create(ctx, category)
 }

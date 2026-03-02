@@ -42,6 +42,7 @@ func NewRouter(
 		api.DELETE("/venues/:id", authMiddleware(authService), venueHandler.Delete)
 		api.GET("/categories", categoryHandler.List)
 		api.GET("/categories/:id", categoryHandler.Get)
+		api.POST("/categories", authMiddleware(authService), categoryHandler.Create)
 
 		api.POST("/auth/register", authHandler.Register)
 		api.POST("/auth/login", authHandler.Login)

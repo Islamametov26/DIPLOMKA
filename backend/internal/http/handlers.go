@@ -27,6 +27,10 @@ type CategoryHandler struct {
 	service *service.CategoryService
 }
 
+type categoryPayload struct {
+	Name string `json:"name"`
+}
+
 func NewEventHandler(service *service.EventService) *EventHandler {
 	return &EventHandler{service: service}
 }
@@ -308,6 +312,28 @@ func (h *CategoryHandler) Get(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, category)
+}
+
+func (h *CategoryHandler) Create(c *gin.Context) {
+	var payload categoryPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		writeError(c, http.StatusBadRequest, "invalid payload")
+		return
+	}
+
+	name := strings.TrimSpace(payload.Name)
+	if name == "" {
+		writeError(c, http.StatusBadRequest, "invalid payload")
+		return
+	}
+
+	category, err := h.service.Create(c.Request.Context(), domain.Category{Name: name})
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, category)
 }
 
 func parseUUID(raw string) (uuid.UUID, bool) {
