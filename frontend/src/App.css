@@ -121,11 +121,12 @@
 }
 
 .site-footer {
-  margin: 0 clamp(16px, 3vw, 44px) 22px;
+  width: 100%;
+  margin: 0 0 22px;
   border: 1px solid var(--line);
-  border-radius: 22px;
+  border-radius: 0;
   background: var(--surface);
-  padding: 18px 20px 14px;
+  padding: 18px clamp(16px, 3vw, 44px) 14px;
   display: grid;
   gap: 14px;
 }
@@ -1930,7 +1931,7 @@
   }
 
   .site-footer {
-    margin: 0 16px 18px;
+    margin: 0 0 18px;
   }
 
   .site-footer__top {
