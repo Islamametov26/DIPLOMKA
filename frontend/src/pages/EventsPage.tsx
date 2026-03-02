@@ -21,8 +21,6 @@ type EventsState = typeof emptyState
 
 type Props = {
   onOpenEvent: (eventId: string) => void
-  onOpenCategory?: (categoryId: string) => void
-  categoryId?: string
 }
 
 type CalendarDay = {
@@ -78,7 +76,7 @@ function toHumanDate(key: string, localeTag: string) {
   })
 }
 
-function EventsPage({ onOpenEvent, onOpenCategory, categoryId }: Props) {
+function EventsPage({ onOpenEvent }: Props) {
   const { t, localeTag } = useLocale()
   const PAGE_SIZE = 9
   const [state, setState] = useState<EventsState>(emptyState)
@@ -104,7 +102,7 @@ function EventsPage({ onOpenEvent, onOpenCategory, categoryId }: Props) {
   const safeItems = Array.isArray(state.items) ? state.items : []
   const safeCategories = Array.isArray(state.categories) ? state.categories : []
   const safeVenues = Array.isArray(state.venues) ? state.venues : []
-  const effectiveCategoryId = categoryId?.trim() ? categoryId : selectedCategoryId
+  const effectiveCategoryId = selectedCategoryId
 
   useEffect(() => {
     const controller = new AbortController()
@@ -149,14 +147,6 @@ function EventsPage({ onOpenEvent, onOpenCategory, categoryId }: Props) {
     window.addEventListener('resize', updateVisibleCount)
     return () => window.removeEventListener('resize', updateVisibleCount)
   }, [])
-
-  useEffect(() => {
-    if (categoryId && categoryId.trim()) {
-      setSelectedCategoryId(categoryId.trim())
-      return
-    }
-    setSelectedCategoryId('all')
-  }, [categoryId])
 
   const eventDateSet = useMemo(() => {
     const set = new Set<string>()
@@ -289,10 +279,6 @@ function EventsPage({ onOpenEvent, onOpenCategory, categoryId }: Props) {
   }, [effectiveCategoryId, safeItems])
 
   const handleCategorySelect = (id: string) => {
-    if (onOpenCategory) {
-      onOpenCategory(id)
-      return
-    }
     setSelectedCategoryId(id)
   }
 
@@ -344,6 +330,65 @@ function EventsPage({ onOpenEvent, onOpenCategory, categoryId }: Props) {
         <h1 className="events__title">{t('events.title')}</h1>
         <p className="events__subtitle">{t('events.subtitle')}</p>
       </div>
+
+      {popularItems.length > 0 && (
+        <section className="events__popular" aria-label="Популярное">
+          <div className="events__popular-header">
+            <h2 className="events__popular-title">{t('events.popular')}</h2>
+            <div className="events__popular-actions">
+              <button className="events__popular-arrow" type="button" onClick={() => slidePopular('left')} aria-label={t('events.back')}>
+                ‹
+              </button>
+              <button className="events__popular-arrow" type="button" onClick={() => slidePopular('right')} aria-label={t('events.forward')}>
+                ›
+              </button>
+            </div>
+          </div>
+          <div className="events__popular-track" ref={popularRef}>
+            {popularItems.map((event) => (
+              <article
+                className="events__popular-card"
+                key={`popular-${event.id}`}
+                role="button"
+                tabIndex={0}
+                onClick={() => onOpenEvent(event.id)}
+                onKeyDown={(keyEvent) => {
+                  if (keyEvent.key === 'Enter' || keyEvent.key === ' ') {
+                    keyEvent.preventDefault()
+                    onOpenEvent(event.id)
+                  }
+                }}
+              >
+                {event.imageUrl ? (
+                  <img className="events__popular-image" src={event.imageUrl} alt={event.title} loading="lazy" />
+                ) : (
+                  <div className="events__popular-image events__popular-image--placeholder" aria-hidden="true" />
+                )}
+                <div className="events__popular-meta">{new Date(event.startAt).toLocaleString(localeTag)}</div>
+                <h3 className="events__popular-name">{event.title}</h3>
+                <p className="events__popular-description">{event.description}</p>
+                <div className="events__popular-footer">
+                  <span className="events__popular-venue">
+                    {t('events.venue')}: {venueById[event.venueId]?.name || '-'}
+                  </span>
+                </div>
+                <div className="events__popular-actions-wrap">
+                  <button
+                    className="events__popular-hover-action"
+                    type="button"
+                    onClick={(clickEvent) => {
+                      clickEvent.stopPropagation()
+                      onOpenEvent(event.id)
+                    }}
+                  >
+                    {t('events.buyTicket')}
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="events__panel">
         {calendarDays.length > 0 && (
@@ -420,65 +465,6 @@ function EventsPage({ onOpenEvent, onOpenCategory, categoryId }: Props) {
           </div>
         )}
       </div>
-
-      {popularItems.length > 0 && (
-        <section className="events__popular" aria-label="Популярное">
-          <div className="events__popular-header">
-            <h2 className="events__popular-title">{t('events.popular')}</h2>
-            <div className="events__popular-actions">
-              <button className="events__popular-arrow" type="button" onClick={() => slidePopular('left')} aria-label={t('events.back')}>
-                ‹
-              </button>
-              <button className="events__popular-arrow" type="button" onClick={() => slidePopular('right')} aria-label={t('events.forward')}>
-                ›
-              </button>
-            </div>
-          </div>
-          <div className="events__popular-track" ref={popularRef}>
-            {popularItems.map((event) => (
-              <article
-                className="events__popular-card"
-                key={`popular-${event.id}`}
-                role="button"
-                tabIndex={0}
-                onClick={() => onOpenEvent(event.id)}
-                onKeyDown={(keyEvent) => {
-                  if (keyEvent.key === 'Enter' || keyEvent.key === ' ') {
-                    keyEvent.preventDefault()
-                    onOpenEvent(event.id)
-                  }
-                }}
-              >
-                {event.imageUrl ? (
-                  <img className="events__popular-image" src={event.imageUrl} alt={event.title} loading="lazy" />
-                ) : (
-                  <div className="events__popular-image events__popular-image--placeholder" aria-hidden="true" />
-                )}
-                <div className="events__popular-meta">{new Date(event.startAt).toLocaleString(localeTag)}</div>
-                <h3 className="events__popular-name">{event.title}</h3>
-                <p className="events__popular-description">{event.description}</p>
-                <div className="events__popular-footer">
-                  <span className="events__popular-venue">
-                    {t('events.venue')}: {venueById[event.venueId]?.name || '-'}
-                  </span>
-                </div>
-                <div className="events__popular-actions-wrap">
-                  <button
-                    className="events__popular-hover-action"
-                    type="button"
-                    onClick={(clickEvent) => {
-                      clickEvent.stopPropagation()
-                      onOpenEvent(event.id)
-                    }}
-                  >
-                    {t('events.buyTicket')}
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
     </section>
   )
 }

@@ -36,11 +36,8 @@ function App() {
   const isAdmin = route.startsWith('/admin')
   const isVenues = route.startsWith('/venues')
   const eventMatch = route.match(/^\/events\/([^/]+)$/)
-  const categoryMatch = route.match(/^\/categories\/([^/]+)$/)
   const eventId = eventMatch ? eventMatch[1] : ''
-  const categoryId = categoryMatch ? decodeURIComponent(categoryMatch[1]) : ''
   const isEventDetails = Boolean(eventId)
-  const isCategoryPage = Boolean(categoryId)
 
   useEffect(() => {
     const handlePop = () => setRoute(window.location.pathname)
@@ -128,17 +125,8 @@ function App() {
           <VenuesPage />
         ) : isEventDetails ? (
           <EventDetailsPage eventId={eventId} onBack={() => navigate('/')} onRequireAuth={() => setAuthOpen(true)} />
-        ) : isCategoryPage ? (
-          <EventsPage
-            categoryId={categoryId}
-            onOpenCategory={(id) => navigate(id === 'all' ? '/' : `/categories/${encodeURIComponent(id)}`)}
-            onOpenEvent={(id) => navigate(`/events/${id}`)}
-          />
         ) : (
-          <EventsPage
-            onOpenCategory={(id) => navigate(id === 'all' ? '/' : `/categories/${encodeURIComponent(id)}`)}
-            onOpenEvent={(id) => navigate(`/events/${id}`)}
-          />
+          <EventsPage onOpenEvent={(id) => navigate(`/events/${id}`)} />
         )}
       </main>
       <footer className="site-footer">
