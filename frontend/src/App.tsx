@@ -131,14 +131,6 @@ function App() {
       </main>
       <footer className="site-footer">
         <div className="site-footer__top">
-          <div className="site-footer__brand-block">
-            <a className="site-footer__brand" href="/" onClick={handleNavLink('/')}>
-              AFISHA AIA
-            </a>
-            <p className="site-footer__text">
-              Афиша событий, фильмов и мероприятий города в одном месте.
-            </p>
-          </div>
           <div className="site-footer__column">
             <p className="site-footer__title">Поддержка</p>
             <a
