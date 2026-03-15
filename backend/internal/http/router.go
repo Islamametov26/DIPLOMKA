@@ -29,6 +29,7 @@ func NewRouter(
 	bookingHandler := NewBookingHandler(bookingService)
 
 	router.GET("/health", healthHandler)
+	router.HEAD("/health", healthHandler)
 
 	api := router.Group("/api")
 	{

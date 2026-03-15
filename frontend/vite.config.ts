@@ -12,6 +12,16 @@ export default defineConfig({
   ],
   server: {
     allowedHosts: true,
+    proxy: {
+      '/api': {
+        target: 'http://backend:8080',
+        changeOrigin: true,
+      },
+      '/health': {
+        target: 'http://backend:8080',
+        changeOrigin: true,
+      },
+    },
   },
   preview: {
     allowedHosts: true,
