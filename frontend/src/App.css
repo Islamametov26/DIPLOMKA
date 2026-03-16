@@ -1611,6 +1611,13 @@
   justify-content: start;
 }
 
+.event-page__frame-button {
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
 .event-page__frame {
   width: 100%;
   aspect-ratio: 4 / 3;
@@ -1618,6 +1625,57 @@
   border: 1px solid var(--line);
   object-fit: contain;
   background: rgba(var(--accent-rgb), 0.05);
+  transition: transform 0.18s ease, border-color 0.18s ease;
+}
+
+.event-page__frame-button:hover .event-page__frame,
+.event-page__frame-button:focus-visible .event-page__frame {
+  transform: translateY(-2px);
+  border-color: rgba(var(--accent-rgb), 0.55);
+}
+
+.event-image-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.event-image-viewer__overlay {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(9, 12, 18, 0.82);
+}
+
+.event-image-viewer__content {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 1100px);
+  display: grid;
+  gap: 12px;
+  justify-items: end;
+}
+
+.event-image-viewer__close {
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(20, 24, 31, 0.72);
+  color: #fff;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.event-image-viewer__image {
+  width: 100%;
+  max-height: calc(100vh - 120px);
+  object-fit: contain;
+  border-radius: 18px;
+  background: rgba(20, 24, 31, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .event-page__buy {

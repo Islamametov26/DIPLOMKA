@@ -47,6 +47,7 @@ function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
   const { t, localeTag } = useLocale()
   const [state, setState] = useState<PageState>(initialState)
   const [buyOpen, setBuyOpen] = useState(false)
+  const [activeImageUrl, setActiveImageUrl] = useState('')
   const [selectedSeats, setSelectedSeats] = useState<string[]>([])
   const [reservedSeats, setReservedSeats] = useState<string[]>([])
   const [bookingStatus, setBookingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
@@ -103,6 +104,19 @@ function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
       active = false
     }
   }, [buyOpen, event])
+
+  useEffect(() => {
+    if (!activeImageUrl) {
+      return
+    }
+    const handleKeyDown = (keyboardEvent: KeyboardEvent) => {
+      if (keyboardEvent.key === 'Escape') {
+        setActiveImageUrl('')
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [activeImageUrl])
 
   const openBuyPopup = () => {
     setBookingStatus('idle')
@@ -243,13 +257,20 @@ function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
               {galleryImages.length > 0 ? (
                 <div className="event-page__frames">
                   {galleryImages.map((imageUrl, index) => (
-                    <img
-                      className="event-page__frame"
+                    <button
+                      className="event-page__frame-button"
                       key={`frame-${index}-${imageUrl}`}
-                      src={imageUrl}
-                      alt={`${safeTitle} #${index + 1}`}
-                      loading="lazy"
-                    />
+                      type="button"
+                      onClick={() => setActiveImageUrl(imageUrl)}
+                      aria-label={`${t('event.trailerOpen')} ${index + 1}`}
+                    >
+                      <img
+                        className="event-page__frame"
+                        src={imageUrl}
+                        alt={`${safeTitle} #${index + 1}`}
+                        loading="lazy"
+                      />
+                    </button>
                   ))}
                 </div>
               ) : (
@@ -258,6 +279,18 @@ function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
             </section>
           )}
         </>
+      )}
+
+      {activeImageUrl && (
+        <div className="event-image-viewer" role="dialog" aria-modal="true" aria-label={safeTitle}>
+          <button className="event-image-viewer__overlay" type="button" onClick={() => setActiveImageUrl('')} />
+          <div className="event-image-viewer__content" role="document">
+            <button className="event-image-viewer__close" type="button" onClick={() => setActiveImageUrl('')}>
+              {t('event.close')}
+            </button>
+            <img className="event-image-viewer__image" src={activeImageUrl} alt={safeTitle} />
+          </div>
+        </div>
       )}
 
       {buyOpen && event && (
@@ -296,4 +329,3 @@ function EventDetailsPage({ eventId, onBack, onRequireAuth }: Props) {
 }
 
 export default EventDetailsPage
-
