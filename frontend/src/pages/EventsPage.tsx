@@ -9,15 +9,21 @@ import type { Event } from '../types/event'
 import type { Venue } from '../types/venue'
 import { cleanText } from '../utils/text'
 
-const emptyState = {
-  status: 'loading' as const,
-  items: [] as Event[],
-  categories: [] as Category[],
-  venues: [] as Venue[],
-  error: '' as string | null,
+type EventsState = {
+  status: 'idle' | 'loading' | 'success' | 'error'
+  items: Event[]
+  categories: Category[]
+  venues: Venue[]
+  error: string | null
 }
 
-type EventsState = typeof emptyState
+const emptyState: EventsState = {
+  status: 'loading',
+  items: [],
+  categories: [],
+  venues: [],
+  error: '',
+}
 
 type Props = {
   onOpenEvent: (eventId: string) => void

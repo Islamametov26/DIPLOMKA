@@ -232,7 +232,7 @@ function AdminPanel({ events, venues, categories, onSaved }: Props) {
   }
 
   return (
-    <section className="admin">
+    <section className="admin admin-panel">
       <div className="admin__header">
         <div>
           <p className="admin__eyebrow">События</p>

@@ -62,27 +62,29 @@ function AdminPage({ onRequireAuth }: Props) {
 
   if (!user) {
     return (
-      <section className="admin">
-        <div className="admin__header">
-          <div>
-            <p className="admin__eyebrow">Админка</p>
-            <h2 className="admin__title">Требуется авторизация</h2>
+      <section className="admin-page">
+        <div className="admin admin--standalone">
+          <div className="admin__header">
+            <div>
+              <p className="admin__eyebrow">Админка</p>
+              <h2 className="admin__title">Требуется авторизация</h2>
+            </div>
+            <button className="admin__primary" type="button" onClick={onRequireAuth}>
+              Войти
+            </button>
           </div>
-          <button className="admin__primary" type="button" onClick={onRequireAuth}>
-            Войти
-          </button>
+          <p className="admin__note">Для управления афишей войдите в аккаунт администратора.</p>
         </div>
-        <p className="admin__note">Для управления афишей войдите в аккаунт администратора.</p>
       </section>
     )
   }
 
   return (
-    <section className="admin">
+    <section className="admin-page">
       {state.status === 'error' && <div className="admin__status admin__status--error">{state.error}</div>}
       {(state.status === 'idle' || state.status === 'loading') && <div className="admin__status">Загрузка...</div>}
       {state.status === 'ready' && (
-        <div className="admin__stack">
+        <div className="admin-page__stack">
           <AdminPanel events={safeEvents} venues={safeVenues} categories={safeCategories} onSaved={load} />
           <VenueManager venues={safeVenues} onSaved={reloadVenues} />
         </div>
@@ -92,4 +94,3 @@ function AdminPage({ onRequireAuth }: Props) {
 }
 
 export default AdminPage
-
