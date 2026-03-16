@@ -69,7 +69,7 @@ function App() {
     <div className="app">
       <header className="app__header">
         <a className="app__brand" href="/" onClick={handleNavLink('/')}>
-          AFISHA AIA
+          afishaaia Афиша города
         </a>
         <nav className="app__nav" aria-label="Primary" />
         <div className="app__actions">
@@ -153,7 +153,7 @@ function App() {
           </div>
         </div>
         <div className="site-footer__bottom">
-          <span>© {new Date().getFullYear()} AFISHA AIA</span>
+          <span>© {new Date().getFullYear()} afishaaia Афиша города</span>
           <span>Все права защищены</span>
         </div>
       </footer>
@@ -165,7 +165,7 @@ function App() {
               {t('drawer.close')}
             </button>
             <p className="about-drawer__eyebrow">{t('drawer.about')}</p>
-            <h2 className="about-drawer__title">AFISHA AIA</h2>
+            <h2 className="about-drawer__title">afishaaia Афиша города</h2>
             <p className="about-drawer__text">{t('drawer.aboutText')}</p>
             <p className="about-drawer__eyebrow">{t('drawer.contacts')}</p>
             <div className="about-drawer__contacts">
@@ -184,4 +184,3 @@ function App() {
 }
 
 export default App
-
