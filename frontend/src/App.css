@@ -958,11 +958,13 @@
 
 .admin__sidebar {
   display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: 12px;
   position: sticky;
   top: 92px;
   max-height: calc(100vh - 120px);
   align-content: start;
+  min-height: 0;
 }
 
 .admin__search {
@@ -1077,9 +1079,11 @@
 .admin__list {
   display: grid;
   gap: 10px;
-  max-height: calc(100vh - 190px);
+  min-height: 0;
+  max-height: 100%;
   overflow: auto;
   padding-right: 4px;
+  align-content: start;
 }
 
 .admin-item {
